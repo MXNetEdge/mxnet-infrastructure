@@ -34,7 +34,7 @@ GITHUB_OAUTH_TOKEN = secret["GITHUB_OAUTH_TOKEN"]
 REPO = os.environ.get("REPO")
 AUTH = (GITHUB_USER, GITHUB_OAUTH_TOKEN)
 
-
+# This function is to extract labels from comments
 def tokenize(string):
     substring = string[string.find('[')+1: string.rfind(']')] 
     labels = [' '.join(label.split()) for label in substring.split(',')]
@@ -42,14 +42,13 @@ def tokenize(string):
     return labels
 
 
+# covert all non-alphanumeric characters from raw_string to sub_string
 def clean_string(raw_string, sub_string):
-    # covert all non-alphanumeric characters from raw_string to sub_string
     cleans = re.sub("[^0-9a-zA-Z]", sub_string, raw_string)
     return cleans.lower()
 
-
+# This method is to count how many pages of issues/labels in total
 def count_pages(obj, state='all'):
-    # This method is to count how many pages of issues/labels in total
     # obj could be "issues"/"labels"
     # state could be "open"/"closed"/"all", available to issues
     assert obj in set(["issues", "labels"]), "Invalid Input!"
@@ -68,6 +67,7 @@ def count_pages(obj, state='all'):
     return int(clean_string(response.headers['link'], " ").split()[-3])
 
 
+# This method is to find comments which @mxnet-label-bot
 def find_notifications():
     data = []
     pages = count_pages("issues")
@@ -100,6 +100,7 @@ def find_notifications():
     return data
 
 
+# find all existing labels in a repo
 def all_labels():
     pages = count_pages("labels")
     all_labels = []
@@ -116,6 +117,7 @@ def all_labels():
 all_labels = all_labels()
 
 
+# add labels to one issue
 def add_github_labels(number, labels):
     # number: the issue number
     # labels: list of strings
@@ -132,8 +134,9 @@ def add_github_labels(number, labels):
         logger.error(response.json())
 
 
+# add labels 
+# input is a json file: [{number:1, labels:[a,b]},{number:2, labels:[c,d]}]
 def label(issues):
-    #issues is a json file: [{number:1, labels:[a,b]},{number:1, labels:[a,b]}]
     for issue in issues:
         add_github_labels(issue['issue'], issue['labels'])
 
