@@ -1,7 +1,7 @@
 variable "github_credentials" {
   default = {
-    GITHUB_USER = ""
-    GITHUB_OAUTH_TOKEN = ""
+    github_user = ""
+    github_oauth_token  = ""
   }
   type = "map"
 }

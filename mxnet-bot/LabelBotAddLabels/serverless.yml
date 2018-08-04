@@ -55,4 +55,4 @@ functions:
     # replace secret_name with your secret's name
       secret_name : "secret_name"
     # replace REPO with "apache/incubator-mxnet"
-      REPO : "REPO"
+      repo : "repo_name"

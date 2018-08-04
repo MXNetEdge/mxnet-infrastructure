@@ -8,7 +8,7 @@ This bot serves to help non-committers add labels to GitHub issues.
 #### 1. Store a secret
 *Create a secret using Terraform*
 * Configure ***variables.tf***
-    1. In variable "github_credentials", fill in GITHUB_USER and GITHUB_OAUTH_TOKEN. If you don't want to fill in here, then you can leave them blank.
+    1. In variable "github_credentials", fill in github_user and github_oauth_token. If you don't want to fill in here, then you can leave them blank.
        After you set up a secret, you can go to [AWS Secrets Manager Console](https://console.aws.amazon.com/secretsmanager) console to manually fill in secret values.
     2. In variable "secret_name", fill in the name of your secret. ie:"github/credentials"
 * Run `terraform apply`. It will create the secret. Once setup, it will output the secret ARN. Write it down. 
@@ -24,7 +24,7 @@ This bot serves to help non-committers add labels to GitHub issues.
     2. Under ***environment***
         1. Set ***region_name*** as the same region of your secret.
         2. Replace ***secret_name*** with the secret name. (Same as the secret name you set in step1)
-        3. Replace ***REPO*** with the repo's name you want to test.
+        3. Replace ***repo*** with the repo's name you want to test.
 * Deploy    
 Open terminal, go to current directory. run 
 ```

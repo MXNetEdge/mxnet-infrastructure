@@ -23,14 +23,27 @@ import secret_manager
 logging.basicConfig(level=logging.INFO)
 
 class LabelBot:
-    secret = json.loads(secret_manager.get_secret())
-    GITHUB_USER = secret["GITHUB_USER"]
-    GITHUB_OAUTH_TOKEN = secret["GITHUB_OAUTH_TOKEN"]
-    REPO = os.environ.get("REPO")
-    AUTH = (GITHUB_USER, GITHUB_OAUTH_TOKEN)
 
-    def __init__(self):
+    def __init__(self, 
+                 repo=os.environ.get("repo"), 
+                 github_user=None, 
+                 github_oauth_token=None, 
+                 secret=True):
+        self.repo = repo
+        self.github_user = github_user
+        self.github_oauth_token = github_oauth_token
+        if secret:
+            self.get_secret()
+        self.auth = (self.github_user, self.github_oauth_token)
         self.all_labels = None
+
+    def get_secret(self):
+        """
+        This method is to get secret value from Secrets Manager
+        """
+        secret = json.loads(secret_manager.get_secret())
+        self.github_user = secret["github_user"]
+        self.github_oauth_token = secret["github_oauth_token"]
 
     def tokenize(self, string):
         """
@@ -54,11 +67,11 @@ class LabelBot:
         state could be "open"/"closed"/"all", available to issues
         """
         assert obj in set(["issues", "labels"]), "Invalid Input!"
-        url = 'https://api.github.com/repos/{}/{}'.format(self.REPO, obj)
+        url = 'https://api.github.com/repos/{}/{}'.format(self.repo, obj)
         if obj == 'issues':
-            response = requests.get(url, {'state': state}, auth=self.AUTH)    
+            response = requests.get(url, {'state': state}, auth=self.auth)    
         else:
-            response = requests.get(url, auth=self.AUTH)
+            response = requests.get(url, auth=self.auth)
         assert response.status_code == 200, response.status_code
         if "link" not in response.headers:
             return 1
@@ -71,14 +84,14 @@ class LabelBot:
         data = []
         pages = self.count_pages("issues")
         for page in range(1, pages+1):
-            url = 'https://api.github.com/repos/' + self.REPO + '/issues?page=' + str(page) \
-                + '&per_page=30'.format(repo=self.REPO)
+            url = 'https://api.github.com/repos/' + self.repo + '/issues?page=' + str(page) \
+                + '&per_page=30'.format(repo=self.repo)
             response = requests.get(url,
                                     {'state': 'open',
                                      'base': 'master',
                                      'sort': 'created',
                                      'direction': 'desc'},
-                                     auth=self.AUTH)
+                                     auth=self.auth)
             for item in response.json():
                 # limit the amount of unlabeled issues per execution
                 if len(data) >= 50:
@@ -88,8 +101,8 @@ class LabelBot:
                 if not item['labels']:
                     if item['comments'] != 0:
                         labels = []
-                        comments_url = "https://api.github.com/repos/{}/issues/{}/comments".format(self.REPO,item['number'])
-                        comments = requests.get(comments_url, auth=self.AUTH).json()
+                        comments_url = "https://api.github.com/repos/{}/issues/{}/comments".format(self.repo,item['number'])
+                        comments = requests.get(comments_url, auth=self.auth).json()
                         for comment in comments:
                             if "@mxnet-label-bot" in comment['body']:
                                 labels += self.tokenize(comment['body'])
@@ -105,9 +118,9 @@ class LabelBot:
         pages = self.count_pages("labels")
         all_labels = []
         for page in range(1, pages+1):
-            url = 'https://api.github.com/repos/' + self.REPO + '/labels?page=' + str(page) \
-                + '&per_page=30'.format(repo=self.REPO)
-            response = requests.get(url, auth=self.AUTH)
+            url = 'https://api.github.com/repos/' + self.repo + '/labels?page=' + str(page) \
+                + '&per_page=30'.format(repo=self.repo)
+            response = requests.get(url, auth=self.auth)
             for item in response.json():
                 all_labels.append(item['name'].lower())
         self.all_labels = set(all_labels)
@@ -122,13 +135,13 @@ class LabelBot:
         """
         assert self.all_labels, "Find all labels first"
         issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels'\
-                            .format(repo=self.REPO, id=issue_num)
+                            .format(repo=self.repo, id=issue_num)
         # clean labels, remove duplicated spaces. ex: "hello  world" -> "hello world"
         labels = [" ".join(label.split()) for label in labels]
         labels = [label for label in labels if label.lower() in self.all_labels]
-        response = requests.post(issue_labels_url, json.dumps(labels), auth=self.AUTH)
+        response = requests.post(issue_labels_url, json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
-            logging.info('Successfully add labels to {}: {}.'.format(str(number), str(labels)))
+            logging.info('Successfully add labels to {}: {}.'.format(str(issue_num), str(labels)))
         else:
             logging.error("Could not add the label")
             logging.error(response.json())

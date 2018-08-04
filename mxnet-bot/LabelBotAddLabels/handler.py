@@ -19,7 +19,7 @@
 from LabelBot import LabelBot
 
 def label_bot_lambda(event, context):
-    lb = LabelBot()
+    lb = LabelBot(secret=True)
     data = lb.find_notifications()
     lb.label(data)
     return "Lambda is triggered successfully!"
