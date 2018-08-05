@@ -59,3 +59,7 @@ functions:
       recipients : "a@email.com, b@email.com"
     # replace aws_region with your aws's region
       aws_region : "us-east-1"
+    # replace eb_url with your elasitic beanstalk's URL
+    # ie: "http://labelbot-env.pgc55xzpte.us-east-1.elasticbeanstalk.com/"
+      eb_url : "http://labelbot-env.pgc55xzpte.us-east-1.elasticbeanstalk.com/"
+

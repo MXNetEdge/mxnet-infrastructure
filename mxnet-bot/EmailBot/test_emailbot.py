@@ -18,29 +18,32 @@ import requests
 import unittest
 import boto3
 from botocore.exceptions import ClientError
-from botocore.exceptions import NoCredentialsError
-from unittest.mock import patch
 from EmailBot import EmailBot
-
-# This file are unit tests of EmailBot.py, coverage:91%
+# some version issue
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 
 class TestEmailBot(unittest.TestCase):
+  """
+  Unittest of EmailBot.py, coverage:91%
+  """
 
     def setUp(self):
-        self.eb = EmailBot()
-        self.eb.repo = "apache/incubator-mxnet"
-        self.eb.sender = "a@email.com"
-        self.eb.recipients = ["a@email.com", "b@email.com"]
-
-    def tearDown(self):
-        pass
+        self.eb = EmailBot(img_file="./test_img.png",
+                           elastic_beanstalk_url = "http://fakedocker.us-west-2.elasticbeanstalk.com",
+                           repo = "apache/incubator-mxnet",
+                           sender = "a@email.com",
+                           recipients = "a@gmail.com",
+                           aws_region = "us-east-1")
 
     def test_read_repo(self):
         with patch('EmailBot.requests.get') as mocked_get:
             mocked_get.return_value.status_code = 200
             mocked_get.return_value.json.return_value = [{"body": "issue's body",
-                                                          "created_at": "2018-07-28T18:27:17Z",
+                                                          "created_at": "2018-08-04T18:27:17Z",
                                                           "comments": "0",
                                                           "number": 11925,
                                                           "labels": [{'name': 'Doc'}],
@@ -49,7 +52,7 @@ class TestEmailBot(unittest.TestCase):
                                                           "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",
                                                           },
                                                          {"body": "issue's body",
-                                                          "created_at": "2018-07-28T18:27:17Z",
+                                                          "created_at": "2018-08-04T18:27:17Z",
                                                           "comments": "0",
                                                           "number": 11924,
                                                           "labels": [],
@@ -60,7 +63,7 @@ class TestEmailBot(unittest.TestCase):
             self.eb.read_repo(True)
 
     def test_sendemail(self):
-        with patch('EmailBot.requests.get') as mocked_get:
+        with patch('EmailBot.requests.get') as mocked_get, patch('EmailBot.requests.post') as mocked_post:
             mocked_get.return_value.status_code = 200
             mocked_get.return_value.json.return_value = [{"body": "issue's body",
                                                           "created_at": "2018-08-04T18:27:17Z",
@@ -81,6 +84,8 @@ class TestEmailBot(unittest.TestCase):
                                                           "title":"issue's title",
                                                           "html_url":"https://github.com/apache/incubator-mxnet/issues/11918",
                                                           }]
+            mocked_post.return_value.json.return_value = [{'number': 11919, 'predictions': ['Performance']}, 
+                                                          {'number': 11924, 'predictions': ['Build']}]                                             
             self.assertRaises(ClientError, self.eb.sendemail())
 
 

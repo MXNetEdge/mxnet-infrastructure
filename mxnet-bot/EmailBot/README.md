@@ -10,15 +10,15 @@ An amazon cloudwatch event will trigger lambda function in a certain frequency(e
 </div>
 
 ### Email Content
-
 <div align="center">
-    <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-07-23+at+10.57.18+AM.png" width="200" height="200"><br>
+    <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-08-05+at+1.05.35+PM.png"><br>
 </div>
 
 ## Setup
 Setup this email bot using serverless framework / manually.
 
 ### Deploy email bot using serverless framework
+Prerequist: [Download Serverless](https://serverless.com/framework/docs/getting-started/)
 * Configure ***serverless.yml***
     1. Under ***provider***, replace ***region*** with your aws region
     2. Under ***environment***
@@ -28,24 +28,29 @@ Setup this email bot using serverless framework / manually.
         4. replace ***sender*** with the sender's email
         5. replace ***recipients*** with recipients emails, seperated by comma. ie:"a@email.com, b@email.com"
         6. replace ***aws_region*** with the same aws region in ***provider***
-* Deploy
-Open terminal, go to current directory. run
+* ***Deploy***
+  Open terminal, go to current directory. run
 ```bash
 serverless deploy
 ```
 Then it will set up those AWS services:
-	* An IAM role for label bot with policies:
-```
-1.ses:SendEmail
-2.ses:SendTemplagedEmail
-3.ses:SendRawEmail 
-4.cloudwatchlogs:CreateLogStream
-5.cloudwatchlogs:PutLogEvents
-```
-	* A Lambda function will all code needed.
-	* A CloudWatch event which will trigger the lambda function everyday at 14:59 and 18:59 UTC. 
+1. An IAM role for label bot with policies:
+    ```
+    1.ses:SendEmail
+    2.ses:SendTemplagedEmail
+    3.ses:SendRawEmail 
+    4.cloudwatchlogs:CreateLogStream
+    5.cloudwatchlogs:PutLogEvents
+    ```
+2. A Lambda function will all code needed.
+3. A CloudWatch event which will trigger the lambda function everyday at 14:59 and 18:59 UTC. 
 * [Verify Email Addresses](https://docs.aws.amazon.com/ses/latest/DeveloperGuide/verify-email-addresses-procedure.html) Go to AWS console -> SES -> Email Addresses to verify email address.
 * Test the Lambda Function. On the lambda function's console, click Test.
+* ***Remove***
+If you want to remove those aws services. run
+```bash
+serverless remove
+```
 
 ### Setup email bot manually
 
@@ -54,7 +59,8 @@ Then it will set up those AWS services:
         * Runtime: select Python3.6
         * Role: Create a new IAM role with SES permissions
     * [Upload code](https://docs.aws.amazon.com/lambda/latest/dg/python-programming-model-handler-types.html) Save `EmailBot.py` and `lambda_function.py`, package the two files into a .zip file. Then upload the .zip file into the lambda function.
-    * Set Environment Variables. Set your own `github_user`, `github_oauth_token`, `repo`, `sender`, `recipients` and `aws_region` as environmental variables.
+    * Set Environment Variables. Set your own `github_user`, `github_oauth_token`, `repo`, `sender`, `recipients`,`aws_region` and `eb_url` as environmental variables.
+    * Set Timeout as 5 minutes
     * Add a trigger. Select `CloudWatch Events` from the list on the left. Then configure the trigger. ie. create a new rule with schedule expression `cron(30 2 **?*)`. Then this cloudevent will trigger the lambda function everyday at 2:30(UTC)
 * [Verify Email Addresses](https://docs.aws.amazon.com/ses/latest/DeveloperGuide/verify-email-addresses-procedure.html) Go to AWS console -> SES -> Email Addresses to verify email address.
 * Test the Lambda Function. On the lambda function's console, click Test.

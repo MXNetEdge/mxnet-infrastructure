@@ -16,12 +16,15 @@
 # under the License.
 
 from __future__ import print_function
+from collections import defaultdict
 from botocore.exceptions import ClientError
 from botocore.vendored import requests
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
+import datetime
+import operator
 import boto3
-import boto3.s3
 import datetime
 import logging
 import os
@@ -32,22 +35,25 @@ logging.basicConfig(level=logging.INFO)
 
 class EmailBot:
 
-    def __init__(self, github_user = os.environ.get("github_user"),
+    def __init__(self, img_file="/tmp/img_file.png", sla=5,
+                 github_user = os.environ.get("github_user"),
                  github_oauth_token = os.environ.get("github_oauth_token"),
                  repo = os.environ.get("repo"),
                  sender = os.environ.get("sender"),
                  recipients = os.environ.get("recipients"),
                  aws_region = os.environ.get('aws_region'),
-                 ):
+                 elastic_beanstalk_url = os.environ.get("eb_url")):
         """
         This EmailBot serves to send github issue reports to recipients.
         Args:
+            img_file(str): the path of image file which will be attached in email content
             github_user(str): the github id. ie: "CathyZhang0822"
             github_oauth_token(str): the github oauth token, paired with github_user to realize authorization
             repo(str): the repo name
             sender(str): sender's email address must be verifed in AWS SES. ie:"a@email.com"
             recipients(str): recipients' email address must be verified in AWS SES. ie:"a@email.com, b@email.com"
             aws_region(str): aws region. ie:"us-east-1"
+            elastic_beanstalk_url: the url of EB web server
         """
         self.github_user = github_user
         self.github_oauth_token = github_oauth_token
@@ -56,11 +62,14 @@ class EmailBot:
         self.sender = sender
         self.recipients = [s.strip() for s in recipients.split(",")] if recipients else None
         self.aws_region = aws_region
+        self.elastic_beanstalk_url = elastic_beanstalk_url if elastic_beanstalk_url[-1]!="/" else elastic_beanstalk_url[:-1]
+        self.img_file = img_file
         self.opendata = None
         self.closeddata = None
+        self.sorted_open_data = None
         self.start = datetime.datetime.strptime("2015-01-01", "%Y-%m-%d")
         self.end = datetime.datetime.today()+datetime.timedelta(days=2)
-        self.sla = 5
+        self.sla = sla
         # 2018-5-15 is the date that 'sla' concept was used.
         self.sla_start = datetime.datetime.strptime("2018-05-15", "%Y-%m-%d")
 
@@ -161,6 +170,8 @@ class EmailBot:
         labelled_urls = ""
         unlabelled = []
         unlabelled_urls = ""
+        labels = {}
+        labels = defaultdict(lambda: 0, labels)
         non_responded = []
         non_responded_urls = ""
         outside_sla = []
@@ -176,6 +187,8 @@ class EmailBot:
                 labelled += [{k: v for k, v in item.items()
                               if k in ['number', 'html_url', 'title']}]
                 labelled_urls = labelled_urls + url
+                for label in item['labels']:
+                    labels[label['name']] += 1
             else:
                 unlabelled += [{k: v for k, v in item.items()
                                 if k in ['number', 'html_url', 'title']}]
@@ -198,8 +211,9 @@ class EmailBot:
                                                                    "%Y-%m-%dT%H:%M:%SZ")
                 delta = first_comment_created - created
                 total_deltas.append(delta)
-
+        labels['unlabelled'] = len(unlabelled)
         data = {"labelled": labelled,
+                "labels" : labels,
                 "labelled_urls": labelled_urls,
                 "unlabelled": unlabelled,
                 "unlabelled_urls": unlabelled_urls,
@@ -210,8 +224,26 @@ class EmailBot:
                 "outside_sla": outside_sla,
                 "outside_sla_urls": outside_sla_urls,
                 "total_deltas": total_deltas}
-
+        self.sorted_open_data = data
         return data
+
+    def predict(self):
+        """
+        This method is to send POST requests to EB web server.
+        Then EB web server will send predictions of unlabeled issues back.
+        Returns a json:
+        ie: [{"number":11919, "predictions":["doc"]}]
+        """
+        assert self.sorted_open_data, "Please sort open data first"
+        data = self.sorted_open_data
+        unlabeled_data_number = [item['number'] for item in data["unlabelled"]]
+        logging.info("Start predicting labels for: {}".format(str(unlabeled_data_number)))
+        url = "{}/predict".format(self.elastic_beanstalk_url)
+        response = requests.post(url, json={"issues": unlabeled_data_number})
+        logging.info(response.json())
+        return response.json()
+
+   
 
     def __html_table(self, lol):
         """
@@ -234,6 +266,18 @@ class EmailBot:
         all_sorted_open_data = self.sort()
         self.read_repo(True)
         weekly_sorted_open_data = self.sort()
+        # draw the pie chart
+        all_labels = weekly_sorted_open_data['labels']
+        sorted_labels = sorted(all_labels.items(), key=operator.itemgetter(1), reverse=True)
+        labels = [item[0] for item in sorted_labels[:10]]
+        fracs = [item[1] for item in sorted_labels[:10]]
+        url = "{}/draw".format(self.elastic_beanstalk_url)
+        pic_data = {"fracs": fracs, "labels": labels}
+        response = requests.post(url, json=pic_data)
+        if response.status_code == 200:
+            with open(self.img_file, "wb") as f:
+                f.write(response.content)
+        # generate the first html table
         total_deltas = weekly_sorted_open_data["total_deltas"]
         if len(total_deltas) != 0:
             avg = sum(total_deltas, datetime.timedelta())/len(total_deltas)
@@ -243,16 +287,19 @@ class EmailBot:
             avg_time = "N/A"
             worst_time = "N/A"
         htmltable = [
-                    ["Labeled issues:", str(len(weekly_sorted_open_data["labelled"]))],
-                    ["Unlabeled issues:", str(len(weekly_sorted_open_data["unlabelled"]))],
+                    ["Count of labeled issues:", str(len(weekly_sorted_open_data["labelled"]))],
+                    ["Count of unlabeled issues:", str(len(weekly_sorted_open_data["unlabelled"]))],
                     ["List unlabeled issues", weekly_sorted_open_data["unlabelled_urls"]],
-                    ["Issues with response:", str(len(weekly_sorted_open_data["responded"]))],
-                    ["Issues without response:", str(len(weekly_sorted_open_data["non_responded"]))],
+                    ["Count of issues with response:", str(len(weekly_sorted_open_data["responded"]))],
+                    ["Count of issues without response:", str(len(weekly_sorted_open_data["non_responded"]))],
                     ["The average response time is:", avg_time],
                     ["The worst response time is:", worst_time],
                     ["List issues without response:", weekly_sorted_open_data["non_responded_urls"]],
                     ["Count of issues without response within 5 days:", str(len(all_sorted_open_data["outside_sla"]))],
                     ["List issues without response with 5 days:", all_sorted_open_data["outside_sla_urls"]]]
+        # generate the second html tabel
+        htmltable2 = [["<a href='" +"https://github.com/{}/issues/{}".format(self.repo,str(item['number']) ) + "'>" + str(item['number']) + "</a>   ", 
+                       ",".join(item['predictions'])] for item in self.predict()]
         body_html = """<html>
         <head>
         </head>
@@ -260,12 +307,16 @@ class EmailBot:
           <h4>Week: {} to {}</h4>
           <p>{} newly issues were opened in the above period, among which {} were closed and {} are still open.</p>
           <div>{}</div>
+          <p>Here are the recommanded labels for unlabeled issues:</p>
+          <div>{}</div>
+          <p><img src="cid:image1" width="400" height="400"></p>
         </body>
         </html>
                     """.format(str(self.start.date()), str((self.end - datetime.timedelta(days=2)).date()),
                                str(len(self.opendata) + len(self.closeddata)),
                                str(len(self.closeddata)), str(len(self.opendata)),
-                               "\n".join(self.__html_table(htmltable)))
+                               "\n".join(self.__html_table(htmltable)),
+                               "\n".join(self.__html_table(htmltable2)))
         return body_html
 
     def sendemail(self):
@@ -307,6 +358,13 @@ class EmailBot:
         msg_body.attach(textpart)
         msg_body.attach(htmlpart)
         msg.attach(msg_body)
+
+        # Attach Image
+        fg = open(self.img_file, 'rb')
+        msg_image = MIMEImage(fg.read())
+        fg.close()
+        msg_image.add_header('Content-ID', '<image1>')
+        msg.attach(msg_image)
 
         try:
             # Provide the contents of the email.
