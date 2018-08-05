@@ -1,3 +1,5 @@
-
-mxnet-bot/.DS_Store
+# Pycharm Project
+.idea/
+# OSX Stuff
 .DS_Store
+mxnet-bot/.DS_Store
