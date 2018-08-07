@@ -17,6 +17,10 @@
 
 # lambda handler
 from LabelBot import LabelBot
+import logging
+logging.getLogger().setLevel(logging.INFO)
+logging.getLogger('boto3').setLevel(logging.CRITICAL)
+logging.getLogger('botocore').setLevel(logging.CRITICAL)
 
 def label_bot_lambda(event, context):
     lb = LabelBot(secret=True)

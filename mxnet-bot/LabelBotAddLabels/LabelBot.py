@@ -20,7 +20,7 @@ from botocore.vendored import requests
 import re
 import logging
 import secret_manager
-logging.basicConfig(level=logging.INFO)
+
 
 class LabelBot:
 
@@ -81,7 +81,7 @@ class LabelBot:
         """
         This method is to find comments which @mxnet-label-bot
         """
-        data = []
+        issues = []
         pages = self.count_pages("issues")
         for page in range(1, pages+1):
             url = 'https://api.github.com/repos/' + self.repo + '/issues?page=' + str(page) \
@@ -94,7 +94,7 @@ class LabelBot:
                                      auth=self.auth)
             for item in response.json():
                 # limit the amount of unlabeled issues per execution
-                if len(data) >= 50:
+                if len(issues) >= 50:
                     break
                 if "pull_request" in item:
                     continue
@@ -108,8 +108,8 @@ class LabelBot:
                                 labels += self.tokenize(comment['body'])
                                 logging.info("issue: {}, comment: {}".format(str(item['number']),comment['body']))
                         if labels != []:
-                            data.append({"issue": item['number'], "labels": labels})
-        return data
+                            issues.append({"issue": item['number'], "labels": labels})
+        return issues
 
     def find_all_labels(self):
         """
