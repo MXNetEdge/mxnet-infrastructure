@@ -30,12 +30,10 @@ import logging
 import os
 import re
 
-logging.basicConfig(level=logging.INFO)
-
 
 class EmailBot:
 
-    def __init__(self, img_file="/tmp/img_file.png", sla=5,
+    def __init__(self, img_file="/tmp/img_file.png", sla_days=5,
                  github_user = os.environ.get("github_user"),
                  github_oauth_token = os.environ.get("github_oauth_token"),
                  repo = os.environ.get("repo"),
@@ -64,13 +62,13 @@ class EmailBot:
         self.aws_region = aws_region
         self.elastic_beanstalk_url = elastic_beanstalk_url if elastic_beanstalk_url[-1]!="/" else elastic_beanstalk_url[:-1]
         self.img_file = img_file
-        self.opendata = None
-        self.closeddata = None
-        self.sorted_open_data = None
+        self.open_issues = None
+        self.closed_issues = None
+        self.sorted_open_issues = None
         self.start = datetime.datetime.strptime("2015-01-01", "%Y-%m-%d")
         self.end = datetime.datetime.today()+datetime.timedelta(days=2)
-        self.sla = sla
-        # 2018-5-15 is the date that 'sla' concept was used.
+        self.sla_days = sla_days
+        # 2018-5-15 is the date that 'issues outside sla' concept was used.
         self.sla_start = datetime.datetime.strptime("2018-05-15", "%Y-%m-%d")
 
     def __clean_string(self, raw_string, sub_string):
@@ -80,7 +78,7 @@ class EmailBot:
         cleans = re.sub("[^0-9a-zA-Z]", sub_string, raw_string)
         return cleans.lower()
 
-    def __set_period(self, period):
+    def __set_period(self, period_days):
         """
         This method is to set the time period. ie: set_period(7)
         Because GitHub use UTC time, so we set self.end 2 days after today's date
@@ -91,7 +89,7 @@ class EmailBot:
         """
         today = datetime.datetime.strptime(str(datetime.datetime.today().date()), "%Y-%m-%d")
         self.end = today + datetime.timedelta(days=2)
-        timedelta = datetime.timedelta(days=period)
+        timedelta = datetime.timedelta(days=period_days)
         self.start = self.end - timedelta
 
     def __count_pages(self, obj, state='all'):
@@ -116,7 +114,7 @@ class EmailBot:
         # In this case we need to extrac '387' as the count of pages
         return int(self.__clean_string(response.headers['link'], " ").split()[-3])
 
-    def read_repo(self, periodically=True):
+    def read_repo(self, periodically=True, period_days=8):
         """
         This method is to read issues in the repo.
         if periodically == True, it will read issues which are created in a specific time period
@@ -124,14 +122,28 @@ class EmailBot:
         """
         logging.info("Start reading {} issues".format("periodically" if periodically else "all"))
         if periodically:
-            self.__set_period(8)
+            self.__set_period(period_days)
         else:
             self.start = self.sla_start
             self.end = datetime.datetime.today()+datetime.timedelta(days=2)
         pages = self.__count_pages('issues', 'all')
-        opendata = []
-        closeddata = []
-        stop = False
+        open_issues = []
+        closed_issues = []
+        # nested function to help break out of multiple loops
+        def read_issues(response):
+            for item in response.json():
+                if "pull_request" in item:
+                    continue
+                created = datetime.datetime.strptime(item['created_at'], "%Y-%m-%dT%H:%M:%SZ")
+                if self.start <= created <= self.end:
+                    if item['state'] == 'open':
+                        open_issues.append(item)
+                    elif item['state'] == 'closed':
+                        closed_issues.append(item)
+                else:
+                    return True
+            return False
+
         for page in range(1, pages + 1):
             url = 'https://api.github.com/repos/' + self.repo + '/issues?page=' + str(page) \
                   + '&per_page=30'.format(repo=self.repo)
@@ -142,30 +154,18 @@ class EmailBot:
                                      'direction': 'desc'},
                                     auth=self.auth)
             response.raise_for_status()
-            for item in response.json():
-                if "pull_request" in item:
-                    continue
-                created = datetime.datetime.strptime(item['created_at'], "%Y-%m-%dT%H:%M:%SZ")
-                if self.start <= created <= self.end:
-                    if item['state'] == 'open':
-                        opendata.append(item)
-                    elif item['state'] == 'closed':
-                        closeddata.append(item)
-                else:
-                    stop = True
-                    break
-            if stop:
+            if read_issues(response):
                 break
-        self.opendata = opendata
-        self.closeddata = closeddata
+        self.open_issues = open_issues
+        self.closed_issues = closed_issues
 
     def sort(self):
         """
         This method is to sort open issues.
         Returns a dictionary.
         """
-        assert self.opendata, "No open issues in this time period!"
-        items = self.opendata
+        assert self.open_issues, "No open issues in this time period!"
+        items = self.open_issues
         labelled = []
         labelled_urls = ""
         unlabelled = []
@@ -197,7 +197,7 @@ class EmailBot:
                 non_responded += [{k: v for k, v in item.items()
                                    if k in ['number', 'html_url', 'title']}]
                 non_responded_urls = non_responded_urls + url
-                if self.sla_start < created < datetime.datetime.now() - datetime.timedelta(days=self.sla):
+                if self.sla_start < created < datetime.datetime.now() - datetime.timedelta(days=self.sla_days):
                     outside_sla += [{k: v for k, v in item.items()
                                      if k in ['number', 'html_url', 'title']}]
                     outside_sla_urls = outside_sla_urls + url
@@ -212,7 +212,7 @@ class EmailBot:
                 delta = first_comment_created - created
                 total_deltas.append(delta)
         labels['unlabelled'] = len(unlabelled)
-        data = {"labelled": labelled,
+        sorted_open_issues = {"labelled": labelled,
                 "labels" : labels,
                 "labelled_urls": labelled_urls,
                 "unlabelled": unlabelled,
@@ -224,8 +224,8 @@ class EmailBot:
                 "outside_sla": outside_sla,
                 "outside_sla_urls": outside_sla_urls,
                 "total_deltas": total_deltas}
-        self.sorted_open_data = data
-        return data
+        self.sorted_open_issues = sorted_open_issues
+        return sorted_open_issues
 
     def predict(self):
         """
@@ -234,12 +234,12 @@ class EmailBot:
         Returns a json:
         ie: [{"number":11919, "predictions":["doc"]}]
         """
-        assert self.sorted_open_data, "Please sort open data first"
-        data = self.sorted_open_data
-        unlabeled_data_number = [item['number'] for item in data["unlabelled"]]
-        logging.info("Start predicting labels for: {}".format(str(unlabeled_data_number)))
+        assert self.sorted_open_issues, "Please sort open issues first"
+        issues = self.sorted_open_issues
+        unlabeled_issue_number = [item['number'] for item in issues["unlabelled"]]
+        logging.info("Start predicting labels for: {}".format(str(unlabeled_issue_number)))
         url = "{}/predict".format(self.elastic_beanstalk_url)
-        response = requests.post(url, json={"issues": unlabeled_data_number})
+        response = requests.post(url, json={"issues": unlabeled_issue_number})
         logging.info(response.json())
         return response.json()
 
@@ -263,11 +263,11 @@ class EmailBot:
         This method is to generate body html of email content
         """
         self.read_repo(False)
-        all_sorted_open_data = self.sort()
+        all_sorted_open_issues = self.sort()
         self.read_repo(True)
-        weekly_sorted_open_data = self.sort()
+        weekly_sorted_open_issues = self.sort()
         # draw the pie chart
-        all_labels = weekly_sorted_open_data['labels']
+        all_labels = weekly_sorted_open_issues['labels']
         sorted_labels = sorted(all_labels.items(), key=operator.itemgetter(1), reverse=True)
         labels = [item[0] for item in sorted_labels[:10]]
         fracs = [item[1] for item in sorted_labels[:10]]
@@ -278,7 +278,7 @@ class EmailBot:
             with open(self.img_file, "wb") as f:
                 f.write(response.content)
         # generate the first html table
-        total_deltas = weekly_sorted_open_data["total_deltas"]
+        total_deltas = weekly_sorted_open_issues["total_deltas"]
         if len(total_deltas) != 0:
             avg = sum(total_deltas, datetime.timedelta())/len(total_deltas)
             avg_time = str(avg.days)+" days, "+str(int(avg.seconds/3600))+" hours"
@@ -287,16 +287,16 @@ class EmailBot:
             avg_time = "N/A"
             worst_time = "N/A"
         htmltable = [
-                    ["Count of labeled issues:", str(len(weekly_sorted_open_data["labelled"]))],
-                    ["Count of unlabeled issues:", str(len(weekly_sorted_open_data["unlabelled"]))],
-                    ["List unlabeled issues", weekly_sorted_open_data["unlabelled_urls"]],
-                    ["Count of issues with response:", str(len(weekly_sorted_open_data["responded"]))],
-                    ["Count of issues without response:", str(len(weekly_sorted_open_data["non_responded"]))],
+                    ["Count of labeled issues:", str(len(weekly_sorted_open_issues["labelled"]))],
+                    ["Count of unlabeled issues:", str(len(weekly_sorted_open_issues["unlabelled"]))],
+                    ["List unlabeled issues", weekly_sorted_open_issues["unlabelled_urls"]],
+                    ["Count of issues with response:", str(len(weekly_sorted_open_issues["responded"]))],
+                    ["Count of issues without response:", str(len(weekly_sorted_open_issues["non_responded"]))],
                     ["The average response time is:", avg_time],
                     ["The worst response time is:", worst_time],
-                    ["List issues without response:", weekly_sorted_open_data["non_responded_urls"]],
-                    ["Count of issues without response within 5 days:", str(len(all_sorted_open_data["outside_sla"]))],
-                    ["List issues without response with 5 days:", all_sorted_open_data["outside_sla_urls"]]]
+                    ["List issues without response:", weekly_sorted_open_issues["non_responded_urls"]],
+                    ["Count of issues without response within 5 days:", str(len(all_sorted_open_issues["outside_sla"]))],
+                    ["List issues without response with 5 days:", all_sorted_open_issues["outside_sla_urls"]]]
         # generate the second html tabel
         htmltable2 = [["<a href='" +"https://github.com/{}/issues/{}".format(self.repo,str(item['number']) ) + "'>" + str(item['number']) + "</a>   ", 
                        ",".join(item['predictions'])] for item in self.predict()]
@@ -313,8 +313,8 @@ class EmailBot:
         </body>
         </html>
                     """.format(str(self.start.date()), str((self.end - datetime.timedelta(days=2)).date()),
-                               str(len(self.opendata) + len(self.closeddata)),
-                               str(len(self.closeddata)), str(len(self.opendata)),
+                               str(len(self.open_issues) + len(self.closed_issues)),
+                               str(len(self.closed_issues)), str(len(self.open_issues)),
                                "\n".join(self.__html_table(htmltable)),
                                "\n".join(self.__html_table(htmltable2)))
         return body_html

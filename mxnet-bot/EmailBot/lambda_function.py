@@ -16,6 +16,10 @@
 # under the License.
 
 from EmailBot import EmailBot
+import logging
+logging.getLogger().setLevel(logging.INFO)
+logging.getLogger('boto3').setLevel(logging.CRITICAL)
+logging.getLogger('botocore').setLevel(logging.CRITICAL)
 
 def lambda_handler(event, context):
     EB = EmailBot()
