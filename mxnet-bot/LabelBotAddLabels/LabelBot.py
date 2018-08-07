@@ -96,8 +96,6 @@ class LabelBot:
                 # limit the amount of unlabeled issues per execution
                 if len(issues) >= 50:
                     break
-                if "pull_request" in item:
-                    continue
                 if not item['labels']:
                     if item['comments'] != 0:
                         labels = []
