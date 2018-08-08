@@ -56,9 +56,13 @@ class TestLabelBot(unittest.TestCase):
                                                 "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",
                                               }
             predictions = self.pr.rule_based([11925])
+            print(predictions)
             self.assertEqual([['Feature','scala']], predictions)
 
     def test_ml_predict(self):
+        self.pr.reload(tv_file='Vectorizer.p', 
+                       clf_file='Classifier.p',
+                       labels_file='Labels.p')
         with patch('DataFetcher.requests.get') as mocked_get:
             mocked_get.return_value.status_code = 200
             mocked_get.return_value.json.return_value = {
@@ -75,6 +79,9 @@ class TestLabelBot(unittest.TestCase):
             self.assertEqual([['Feature']], predictions)
 
     def test_predict(self):
+        self.pr.reload(tv_file='Vectorizer.p', 
+                       clf_file='Classifier.p',
+                       labels_file='Labels.p')
         with patch('DataFetcher.requests.get') as mocked_get:
             mocked_get.return_value.status_code = 200
             mocked_get.return_value.json.return_value = {

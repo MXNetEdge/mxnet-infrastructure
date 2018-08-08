@@ -19,7 +19,7 @@ It will zip all needed files into `eb.zip`
     2. Under ***Select environment tier***, select ***Web server environment***, click ***Select***.
     3. Under **Base configuration**, select **Preconfigured platform**. In its dropdown, select **Docker**. Then select ***Upload your code***, upload `eb.zip`.
     4. Click ***Configure more options***. Modify Intances, in the dropdown of Instance type, select t2.large. Click ***Create Environment*** (No need to select a security group, EB will create one.)
-    5. It will take about 2 minutes to setup the environment. 
+    5. It will take about 10 minutes to setup the environment. 
     6. Once the environment is setup, it will take 5-10 minutes to generate models. 
     7. Write down URL. (ie: http://labelbot-env.pgc55xzpte.us-east-1.elasticbeanstalk.com)
     

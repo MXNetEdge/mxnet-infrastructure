@@ -22,6 +22,7 @@ import numpy as np
 import pickle
 import re
 import logging
+import os
 
 
 class Predictor:
@@ -41,15 +42,14 @@ class Predictor:
         self.tv = None
         self.labels = None
         self.clf = None
-        self.reload()
 
-    def reload(self):
+    def reload(self, tv_file, clf_file, labels_file):
         """
         This method is to load models
         """
-        self.tv = pickle.load(open("/tmp/Vectorizer.p", "rb"))
-        self.labels = pickle.load(open("/tmp/Labels.p", "rb"))
-        self.clf = pickle.load(open("/tmp/Classifier.p", "rb"))
+        self.tv = pickle.load(open(tv_file, "rb"))
+        self.clf = pickle.load(open(clf_file, "rb"))
+        self.labels = pickle.load(open(labels_file, "rb"))
 
     def tokenize(self, row):
         """
@@ -79,8 +79,10 @@ class Predictor:
             row = df_test.loc[i, 'title']
             # apply rule-based algorithms
             single_issue_predictions = []
-            if "feature request" in row.lower(): single_issue_predictions.append("Feature")
-            if "c++" in row.lower(): single_issue_predictions.append("C++")
+            if "feature request" in row.lower():
+                single_issue_predictions.append("Feature")
+            if "c++" in row.lower():
+                single_issue_predictions.append("C++")
             tokens = self.tokenize(row)
             for k, v in self.keywords.items():
                 for keyword in v:

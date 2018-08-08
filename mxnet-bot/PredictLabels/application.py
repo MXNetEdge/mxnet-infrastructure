@@ -32,9 +32,6 @@ logging.getLogger().setLevel(logging.INFO)
 
 application = Flask(__name__)
 
-if not os.path.exists('/tmp/Classifier.p'):
-    trainer = Trainer()
-    trainer.train()
 predictor = Predictor()
 
 
@@ -83,10 +80,12 @@ def plot():
 def train_models():
     start = timeit.default_timer()
     trainer = Trainer()
-    trainer.train()
+    tmp_files = trainer.train()
     stop = timeit.default_timer()
     # reload models
-    predictor.reload()
+    predictor.reload(tv_file=tmp_files['tv_file'], 
+                     clf_file=tmp_files['clf_file'],
+                     labels_file=tmp_files['labels_file'])
     time = int(stop - start)
     logging.info("Training completed! Time cost: {} min, {} seconds".format(str(int(time/60)), str(time%60)))
     return 
@@ -106,6 +105,8 @@ def initialize():
     # Shut down the scheduler when exiting the app
     atexit.register(lambda: scheduler.shutdown())
 
+# train initial models
+train_models()
 
 initialize()
 

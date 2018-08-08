@@ -21,29 +21,48 @@ from SentenceParser import SentenceParser
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
 from sklearn.preprocessing import LabelEncoder
+import tempfile
 import pickle
 import logging
 
 
 class Trainer:
+    # target labels that we are interested in
+    labels = ["Performance", "Test", "Question",
+               "Feature request", "Call for contribution",
+               "Feature", "Example", "Doc",
+               "Installation", "Build", "Bug"]
 
-    def __init__(self):
+    def __init__(self, 
+                 tv=TfidfVectorizer(min_df=0.00009, ngram_range=(1, 3), max_features=10000), 
+                 clf=SVC(gamma=0.5, C=100, probability=True),
+                 tmp_tv_file=tempfile.NamedTemporaryFile(),
+                 tmp_clf_file=tempfile.NamedTemporaryFile(),
+                 tmp_labels_file=tempfile.NamedTemporaryFile()):
         """
         Trainer is to train issues using Machine Learning methods.
         self.labels(list): a list of target labels
         self.tv: TFIDF model (trigram, max_features = 10000)
         self.clf: Classifier (SVC, kenerl = 'rbf')
+        self.tmp_tv_file: tempfile to store Vectorizer
+        self.tmp_clf_file: tempfile to store Classifier
+        self.tmp_labels_file: tempfile to store Labels
         """
-        self.labels = ["Performance", "Test", "Question",
-                       "Feature request", "Call for contribution",
-                       "Feature", "Example", "Doc",
-                       "Installation", "Build", "Bug"]
-        self.tv = TfidfVectorizer(min_df=0.00009, ngram_range=(1, 3), max_features=10000)
-        self.clf = SVC(gamma=0.5, C=100, probability=True)
+        self.tv = tv
+        self.clf = clf
+        self.tmp_tv_file = tmp_tv_file
+        self.tmp_clf_file = tmp_clf_file
+        self.tmp_labels_file = tmp_labels_file
 
     def train(self):
         """
         This method is to train and save models.
+        It has 5 steps:
+        1. Fetch issues
+        2. Clean data
+        3. Word embedding
+        4. Train models
+        5. Save models
         """
         logging.info("Start training issues of general labels")
         # Step1: Fetch issues with general labels
@@ -75,11 +94,12 @@ class Trainer:
         clf.fit(X, Y)
         # Step5: save models
         logging.info("Saving Models..")
-        pickle.dump(tv, open("/tmp/Vectorizer.p", "wb"))
-        pickle.dump(clf, open("/tmp/Classifier.p", "wb"))
-        pickle.dump(labels, open("/tmp/Labels.p", "wb"))
+        pickle.dump(tv, open(self.tmp_tv_file.name, 'wb'))
+        pickle.dump(clf, open(self.tmp_clf_file.name, 'wb'))
+        pickle.dump(labels, open(self.tmp_labels_file.name, 'wb'))
+        tmp_files = {"tv_file":self.tmp_tv_file.name, 'clf_file':self.tmp_clf_file.name, 'labels_file':self.tmp_labels_file.name}
         logging.info("Completed!")
-        return
+        return tmp_files
 
 
 
