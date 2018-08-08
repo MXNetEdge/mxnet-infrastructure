@@ -22,6 +22,7 @@ import numpy as np
 import pickle
 import re
 import logging
+import os
 
 
 class Predictor:
@@ -42,13 +43,16 @@ class Predictor:
         self.labels = None
         self.clf = None
 
-    def reload(self, tv_file, clf_file, labels_file):
+    def reload(self, tmp_dir):
         """
         This method is to load models
         """
-        self.tv = pickle.load(open(tv_file, "rb"))
-        self.clf = pickle.load(open(clf_file, "rb"))
-        self.labels = pickle.load(open(labels_file, "rb"))
+        with open(os.path.join(tmp_dir.name,'Vectorizer.p'), "rb") as tv:
+            self.tv = pickle.load(tv)
+        with open(os.path.join(tmp_dir.name,'Classifier.p'), "rb") as clf:
+            self.clf = pickle.load(clf)
+        with open(os.path.join(tmp_dir.name,'Labels.p'), "rb") as labels:
+            self.labels = pickle.load(labels)
 
     def tokenize(self, row):
         """

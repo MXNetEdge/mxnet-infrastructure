@@ -80,12 +80,10 @@ def plot():
 def train_models():
     start = timeit.default_timer()
     trainer = Trainer()
-    tmp_files = trainer.train()
+    tmp_dir = trainer.train()
     stop = timeit.default_timer()
     # reload models
-    predictor.reload(tv_file=tmp_files['tv_file'], 
-                     clf_file=tmp_files['clf_file'],
-                     labels_file=tmp_files['labels_file'])
+    predictor.reload(tmp_dir=tmp_dir)
     time = int(stop - start)
     logging.info("Training completed! Time cost: {} min, {} seconds".format(str(int(time/60)), str(time % 60)))
     return 

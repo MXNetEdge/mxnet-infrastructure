@@ -24,6 +24,7 @@ from sklearn.preprocessing import LabelEncoder
 import tempfile
 import pickle
 import logging
+import os
 
 
 class Trainer:
@@ -36,9 +37,8 @@ class Trainer:
     def __init__(self, 
                  tv=TfidfVectorizer(min_df=0.00009, ngram_range=(1, 3), max_features=10000), 
                  clf=SVC(gamma=0.5, C=100, probability=True),
-                 tmp_tv_file=tempfile.NamedTemporaryFile(),
-                 tmp_clf_file=tempfile.NamedTemporaryFile(),
-                 tmp_labels_file=tempfile.NamedTemporaryFile()):
+                 tmp_dir = tempfile.TemporaryDirectory()
+                 ):
         """
         Trainer is to train issues using Machine Learning methods.
         self.labels(list): a list of target labels
@@ -50,10 +50,7 @@ class Trainer:
         """
         self.tv = tv
         self.clf = clf
-        self.tmp_tv_file = tmp_tv_file
-        self.tmp_clf_file = tmp_clf_file
-        self.tmp_labels_file = tmp_labels_file
-
+        self.tmp_dir = tmp_dir
 
     def train(self):
         """
@@ -95,9 +92,11 @@ class Trainer:
         clf.fit(X, Y)
         # Step5: save models
         logging.info("Saving Models..")
-        pickle.dump(tv, open(self.tmp_tv_file.name, 'wb'))
-        pickle.dump(clf, open(self.tmp_clf_file.name, 'wb'))
-        pickle.dump(labels, open(self.tmp_labels_file.name, 'wb'))
-        tmp_files = {"tv_file": self.tmp_tv_file.name, 'clf_file': self.tmp_clf_file.name, 'labels_file': self.tmp_labels_file.name}
+        with open(os.path.join(self.tmp_dir.name,'Vectorizer.p'), 'wb') as tv_file:
+            pickle.dump(tv, tv_file)
+        with open(os.path.join(self.tmp_dir.name,'Classifier.p'), 'wb') as clf_file:
+            pickle.dump(clf, clf_file)
+        with open(os.path.join(self.tmp_dir.name,'Labels.p'), 'wb') as labels_file:
+            pickle.dump(labels, labels_file)
         logging.info("Completed!")
-        return tmp_files
+        return self.tmp_dir
