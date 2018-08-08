@@ -35,9 +35,6 @@ class TestLabelBot(unittest.TestCase):
     def setUp(self):
         self.pr = Predictor()
 
-    def tearDown(self):
-        pass
-
     def test_tokenize(self):
         words = self.pr.tokenize("hello_world")
         self.assertEqual(words, set(['hello','world']))
@@ -56,8 +53,7 @@ class TestLabelBot(unittest.TestCase):
                                                 "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",
                                               }
             predictions = self.pr.rule_based([11925])
-            print(predictions)
-            self.assertEqual([['Feature','scala']], predictions)
+            self.assertEqual([['Feature', 'scala']], predictions)
 
     def test_ml_predict(self):
         self.pr.reload(tv_file='Vectorizer.p', 

@@ -54,6 +54,7 @@ class Trainer:
         self.tmp_clf_file = tmp_clf_file
         self.tmp_labels_file = tmp_labels_file
 
+
     def train(self):
         """
         This method is to train and save models.
@@ -97,11 +98,6 @@ class Trainer:
         pickle.dump(tv, open(self.tmp_tv_file.name, 'wb'))
         pickle.dump(clf, open(self.tmp_clf_file.name, 'wb'))
         pickle.dump(labels, open(self.tmp_labels_file.name, 'wb'))
-        tmp_files = {"tv_file":self.tmp_tv_file.name, 'clf_file':self.tmp_clf_file.name, 'labels_file':self.tmp_labels_file.name}
+        tmp_files = {"tv_file": self.tmp_tv_file.name, 'clf_file': self.tmp_clf_file.name, 'labels_file': self.tmp_labels_file.name}
         logging.info("Completed!")
         return tmp_files
-
-
-
-
-

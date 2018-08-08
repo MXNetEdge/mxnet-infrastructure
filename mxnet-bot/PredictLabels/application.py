@@ -56,11 +56,11 @@ def predict():
     # get prediction results of multiple issues
     # data would be a json file {"issues":[1,2,3]}
     data = request.get_json()["issues"]
-    #predictions = predict_labels.predict(data)
+    # predictions = predict_labels.predict(data)
     predictions = predictor.predict(data)
     response = []
     for i in range(len(data)):
-        response.append({"number":data[i], "predictions":predictions[i]})
+        response.append({"number": data[i], "predictions": predictions[i]})
     return jsonify(response)
 
 
@@ -87,7 +87,7 @@ def train_models():
                      clf_file=tmp_files['clf_file'],
                      labels_file=tmp_files['labels_file'])
     time = int(stop - start)
-    logging.info("Training completed! Time cost: {} min, {} seconds".format(str(int(time/60)), str(time%60)))
+    logging.info("Training completed! Time cost: {} min, {} seconds".format(str(int(time/60)), str(time % 60)))
     return 
 
 
@@ -105,11 +105,11 @@ def initialize():
     # Shut down the scheduler when exiting the app
     atexit.register(lambda: scheduler.shutdown())
 
+
 # train initial models
 train_models()
 
 initialize()
-
 
 # run the app.
 if __name__ == "__main__":

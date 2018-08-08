@@ -127,7 +127,7 @@ class DataFetcher:
                     data += [{'id': item['number'], 'title': item['title'], 'body': item['body'], 'labels': issue_labels}]
         self.json_data = data
         s_labels = "_".join(labels) if labels is not None else "all_labels"
-        filename = "{}_data.json_{}".format(state,s_labels)
+        filename = "{}_data.json_{}".format(state, s_labels)
         logging.info("Writing json file..")
         with open(filename, 'w') as write_file:
             json.dump(data, write_file)

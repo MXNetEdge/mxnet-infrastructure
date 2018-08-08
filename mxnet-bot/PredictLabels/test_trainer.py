@@ -45,7 +45,7 @@ class TestTrainer(unittest.TestCase):
                                                 "created_at": "2018-07-28T18:27:17Z",
                                                 "comments": "0",
                                                 "number": 11925,
-                                                "labels": [{'name':'Doc'}],
+                                                "labels": [{'name': 'Doc'}],
                                                 "state": "open",
                                                 "title": "Confusion in documentation/implementation of F1, MCC metrics",
                                                 "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",

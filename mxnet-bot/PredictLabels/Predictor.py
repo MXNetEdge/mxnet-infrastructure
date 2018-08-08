@@ -22,7 +22,6 @@ import numpy as np
 import pickle
 import re
 import logging
-import os
 
 
 class Predictor:
@@ -108,7 +107,7 @@ class Predictor:
         SP.data = df_test
         SP.clean_body('body', True, True)
         SP.merge_column(['title', 'title', 'title', 'body'], 'train')
-        test_text=SP.process_text('train', True, False, True)
+        test_text = SP.process_text('train', True, False, True)
         # step3: word embedding
         test_data_tfidf = self.tv.transform(test_text).toarray()
         le = LabelEncoder()
@@ -117,7 +116,7 @@ class Predictor:
         probs = self.clf.predict_proba(test_data_tfidf)
         # pick up top 2 predictions which exceeds threshold
         best_n = np.argsort(probs, axis=1)[:, -2:]
-        ml_predictions=[]
+        ml_predictions = []
         for i in range(len(best_n)):
             # INFO:Predictor:issue:11919,Performance:0.47353076240017744,Question:0.2440056213336274
             logging.info("issue:{}, {}:{}, {}:{}".format(str(issues[i]), str(le.classes_[best_n[i][-1]]), str(probs[i][best_n[i][-1]]),

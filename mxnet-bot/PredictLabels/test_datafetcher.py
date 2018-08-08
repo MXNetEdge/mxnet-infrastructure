@@ -49,64 +49,67 @@ class TestLabelBot(unittest.TestCase):
     def test_count_pages(self):
         with patch('DataFetcher.requests.get') as mocked_get:
             mocked_get.return_value.status_code = 200
-            mocked_get.return_value.json.return_value = [{ "body":"issue's body",
-                                                "created_at":"2018-07-28T18:27:17Z",
-                                                "comments":"0",
-                                                "number":11925,
-                                                "labels":[{'name':'Doc'}],
-                                                "state":"open",
-                                                "title":"issue's title",
-                                                "html_url":"https://github.com/apache/incubator-mxnet/issues/11925",
-                                              },
-                                              { "body":"issue's body",
-                                                "created_at":"2018-07-28T18:27:17Z",
-                                                "comments":"0",
-                                                "number":11924,
-                                                "labels":[],
-                                                "state":"closed",
-                                                "title":"issue's title",
-                                                "html_url":"https://github.com/apache/incubator-mxnet/issues/11925",
+            mocked_get.return_value.json.return_value = [{
+                                                "body": "issue's body",
+                                                "created_at": "2018-07-28T18:27:17Z",
+                                                "comments": "0",
+                                                "number": 11925,
+                                                "labels": [{'name': 'Doc'}],
+                                                "state": "open",
+                                                "title": "issue's title",
+                                                "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",
+                                                },
+                                               {"body": "issue's body",
+                                                "created_at": "2018-07-28T18:27:17Z",
+                                                "comments": "0",
+                                                "number": 11924,
+                                                "labels": [],
+                                                "state": "closed",
+                                                "title": "issue's title",
+                                                "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",
                                               }]
             page = self.df.count_pages('all')
-            self.assertEqual(page,1)
+            self.assertEqual(page, 1)
 
     def test_fetch_issues(self):
         with patch('DataFetcher.requests.get') as mocked_get:
             mocked_get.return_value.status_code = 200
-            mocked_get.return_value.json.return_value = { "body":"issue's body",
-                                                "created_at":"2018-07-28T18:27:17Z",
-                                                "comments":"0",
-                                                "number":11925,
-                                                "labels":[{'name':'Feature'}],
-                                                "state":"open",
-                                                "title":"issue's title",
-                                                "html_url":"https://github.com/apache/incubator-mxnet/issues/11925",
+            mocked_get.return_value.json.return_value = {
+                                                "body": "issue's body",
+                                                "created_at":  "2018-07-28T18:27:17Z",
+                                                "comments": "0",
+                                                "number": 11925,
+                                                "labels": [{'name': 'Feature'}],
+                                                "state": "open",
+                                                "title": "issue's title",
+                                                "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",
                                               }
             data = self.df.fetch_issues([11925])
-            expected_data = [{'id':"11925", 'title':"issue's title",'body':"issue's body"}]
+            expected_data = [{'id': "11925", 'title': "issue's title", 'body': "issue's body"}]
             assert_frame_equal(data, pd.DataFrame(expected_data))
 
     def test_data2json(self):
         with patch('DataFetcher.requests.get') as mocked_get:
             mocked_get.return_value.status_code = 200
-            mocked_get.return_value.json.return_value = [{ "body":"issue's body",
-                                                "created_at":"2018-07-28T18:27:17Z",
-                                                "comments":"0",
-                                                "number":11925,
-                                                "labels":[{'name':'Feature'}],
-                                                "state":"open",
-                                                "title":"issue's title",
-                                                "html_url":"https://github.com/apache/incubator-mxnet/issues/11925",
+            mocked_get.return_value.json.return_value = [{
+                                                "body": "issue's body",
+                                                "created_at": "2018-07-28T18:27:17Z",
+                                                "comments": "0",
+                                                "number": 11925,
+                                                "labels": [{'name': 'Feature'}],
+                                                "state": "open",
+                                                "title": "issue's title",
+                                                "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",
                                               },
-                                              { "body":"issue's body",
-                                                "created_at":"2018-07-28T18:27:17Z",
-                                                "comments":"0",
-                                                "number":11924,
-                                                "labels":[],
-                                                "state":"closed",
-                                                "title":"issue's title",
-                                                "html_url":"https://github.com/apache/incubator-mxnet/issues/11925",
-                                              }]
+                                               {"body": "issue's body",
+                                                "created_at": "2018-07-28T18:27:17Z",
+                                                "comments": "0",
+                                                "number": 11924,
+                                                "labels": [],
+                                                "state": "closed",
+                                                "title": "issue's title",
+                                                "html_url": "https://github.com/apache/incubator-mxnet/issues/11925",
+                                                }]
             self.df.data2json('all', labels=["Feature"], other_labels=False)
             expected_data = [{'id': 11925, 'title': "issue's title", 'body': "issue's body", 'labels': 'Feature'}]
             self.assertEqual(expected_data, self.df.json_data)
