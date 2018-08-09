@@ -27,13 +27,13 @@ import os
 
 class Predictor:
     # keywords will be used to apply rule-based algorithms
-    keywords = {"ci": ["ci", "ccache", "jenkins"],
-                "flaky": ["flaky"],
-                "gluon": ["gluon"],
-                "coda": ["cuda", "cudnn"],
-                "scala": ["scala"],
+    keywords = {"CI": ["ci", "ccache", "jenkins"],
+                "Flaky": ["flaky"],
+                "Gluon": ["gluon"],
+                "Cuda": ["cuda", "cudnn"],
+                "Scala": ["scala"],
                 "mkldnn": ["mkldnn, mkl"],
-                "onnx": ["onnx"]}
+                "ONNX": ["onnx"]}
 
     def __init__(self):
         """
