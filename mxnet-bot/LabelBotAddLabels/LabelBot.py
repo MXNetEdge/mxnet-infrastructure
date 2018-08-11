@@ -69,7 +69,8 @@ class LabelBot:
         assert obj in set(["issues", "labels"]), "Invalid Input!"
         url = 'https://api.github.com/repos/{}/{}'.format(self.repo, obj)
         if obj == 'issues':
-            response = requests.get(url, {'state': state}, auth=self.auth)    
+            response = requests.get(url, {'state': state,
+                                          'q': 'no:label+is:open'}, auth=self.auth)
         else:
             response = requests.get(url, auth=self.auth)
         assert response.status_code == 200, response.status_code
@@ -80,17 +81,20 @@ class LabelBot:
     def find_notifications(self):
         """
         This method is to find comments which @mxnet-label-bot
+        @:return [{"issue" : issue_id, "labels": []},...]
         """
         issues = []
         pages = self.count_pages("issues")
         for page in range(1, pages+1):
-            url = 'https://api.github.com/repos/' + self.repo + '/issues?page=' + str(page) \
-                + '&per_page=30'.format(repo=self.repo)
+            url = 'https://api.github.com/repos/{}/{}'.format(self.repo, 'issues')
             response = requests.get(url,
                                     {'state': 'open',
                                      'base': 'master',
                                      'sort': 'created',
-                                     'direction': 'desc'},
+                                     'direction': 'desc',
+                                     'page': str(page),
+                                     'per_page': '30',
+                                     'q': 'no:label+is:open'},
                                      auth=self.auth)
             for item in response.json():
                 # limit the amount of unlabeled issues per execution
