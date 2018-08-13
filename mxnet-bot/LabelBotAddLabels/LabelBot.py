@@ -60,7 +60,7 @@ class LabelBot:
         cleans = re.sub("[^0-9a-zA-Z]", sub_string, raw_string)
         return cleans.lower()
 
-    def count_pages(self, obj, state='all'):
+    def count_pages(self, obj, state='open'):
         """
         This method is to count how many pages of issues/labels in total
         obj could be "issues"/"labels"
@@ -70,7 +70,7 @@ class LabelBot:
         url = 'https://api.github.com/repos/{}/{}'.format(self.repo, obj)
         if obj == 'issues':
             response = requests.get(url, {'state': state,
-                                          'q': 'no:label+is:open'}, auth=self.auth)
+                                          'per_page': 100}, auth=self.auth)
         else:
             response = requests.get(url, auth=self.auth)
         assert response.status_code == 200, response.status_code
@@ -92,9 +92,8 @@ class LabelBot:
                                      'base': 'master',
                                      'sort': 'created',
                                      'direction': 'desc',
-                                     'page': str(page),
-                                     'per_page': '30',
-                                     'q': 'no:label+is:open'},
+                                     'page': page,
+                                     'per_page': 100},
                                      auth=self.auth)
             for item in response.json():
                 # limit the amount of unlabeled issues per execution
