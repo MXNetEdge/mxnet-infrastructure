@@ -24,7 +24,9 @@ logging.getLogger('botocore').setLevel(logging.CRITICAL)
 
 def label_bot_lambda(event, context):
     lb = LabelBot(secret=True)
+    lb.get_rate_limit()
     data = lb.find_notifications()
     lb.label(data)
+    lb.get_rate_limit()
     return "Lambda is triggered successfully!"
 

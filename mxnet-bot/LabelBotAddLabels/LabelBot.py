@@ -37,6 +37,13 @@ class LabelBot:
         self.auth = (self.github_user, self.github_oauth_token)
         self.all_labels = None
 
+    def get_rate_limit(self):
+        res = requests.get('https://api.github.com/{}'.format('rate_limit'),
+                     auth = self.auth)
+        res.raise_for_status()
+        data = res.json()['rate']
+        logging.info("current API status: " + data)
+
     def get_secret(self):
         """
         This method is to get secret value from Secrets Manager
