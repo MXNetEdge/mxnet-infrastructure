@@ -42,7 +42,7 @@ class LabelBot:
                      auth = self.auth)
         res.raise_for_status()
         data = res.json()['rate']
-        logging.info("current API status: " + data)
+        logging.info("current API status: " + str(data))
 
     def get_secret(self):
         """
@@ -80,7 +80,7 @@ class LabelBot:
                                           'per_page': 100}, auth=self.auth)
         else:
             response = requests.get(url, auth=self.auth)
-        assert response.status_code == 200, response.status_code
+        response.raise_for_status()
         if "link" not in response.headers:
             return 1
         return int(self.clean_string(response.headers['link'], " ").split()[-3])
@@ -114,7 +114,7 @@ class LabelBot:
                         for comment in comments:
                             if "@mxnet-label-bot" in comment['body']:
                                 labels += self.tokenize(comment['body'])
-                                logging.info("issue: {}, comment: {}".format(str(item['number']),comment['body']))
+                                logging.debug("issue: {}, comment: {}".format(str(item['number']),comment['body']))
                         if labels != []:
                             issues.append({"issue": item['number'], "labels": labels})
         return issues
@@ -162,4 +162,3 @@ class LabelBot:
         self.find_all_labels()
         for issue in issues:
             self.add_github_labels(issue['issue'], issue['labels'])
-
