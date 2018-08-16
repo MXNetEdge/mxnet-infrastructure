@@ -29,7 +29,7 @@ def label_bot_lambda(event, context):
         data = lb.find_notifications()
         lb.label(data)
         lb.get_rate_limit()
-        return "Lambda is triggered successfully!"
+        return "Lambda is triggered successfully! (remaining HTTP request: {}".format(remaining)
     else:
-        return "Lambda failed triggered (out of limits)"
+        return "Lambda failed triggered (out of limits: {})".format(remaining)
 
