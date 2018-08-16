@@ -37,6 +37,13 @@ class LabelBot:
         self.auth = (self.github_user, self.github_oauth_token)
         self.all_labels = None
 
+    def get_rate_limit(self):
+        res = requests.get('https://api.github.com/{}'.format('rate_limit'),
+                     auth = self.auth)
+        res.raise_for_status()
+        data = res.json()['rate']
+        return data['remaining']
+
     def get_secret(self):
         """
         This method is to get secret value from Secrets Manager
@@ -60,7 +67,7 @@ class LabelBot:
         cleans = re.sub("[^0-9a-zA-Z]", sub_string, raw_string)
         return cleans.lower()
 
-    def count_pages(self, obj, state='all'):
+    def count_pages(self, obj, state='open'):
         """
         This method is to count how many pages of issues/labels in total
         obj could be "issues"/"labels"
@@ -69,10 +76,11 @@ class LabelBot:
         assert obj in set(["issues", "labels"]), "Invalid Input!"
         url = 'https://api.github.com/repos/{}/{}'.format(self.repo, obj)
         if obj == 'issues':
-            response = requests.get(url, {'state': state}, auth=self.auth)    
+            response = requests.get(url, {'state': state,
+                                          'per_page': 100}, auth=self.auth)
         else:
             response = requests.get(url, auth=self.auth)
-        assert response.status_code == 200, response.status_code
+        response.raise_for_status()
         if "link" not in response.headers:
             return 1
         return int(self.clean_string(response.headers['link'], " ").split()[-3])
@@ -80,17 +88,19 @@ class LabelBot:
     def find_notifications(self):
         """
         This method is to find comments which @mxnet-label-bot
+        @:return [{"issue" : issue_id, "labels": []},...]
         """
         issues = []
         pages = self.count_pages("issues")
         for page in range(1, pages+1):
-            url = 'https://api.github.com/repos/' + self.repo + '/issues?page=' + str(page) \
-                + '&per_page=30'.format(repo=self.repo)
+            url = 'https://api.github.com/repos/{}/{}'.format(self.repo, 'issues')
             response = requests.get(url,
                                     {'state': 'open',
                                      'base': 'master',
                                      'sort': 'created',
-                                     'direction': 'desc'},
+                                     'direction': 'desc',
+                                     'page': page,
+                                     'per_page': 100},
                                      auth=self.auth)
             for item in response.json():
                 # limit the amount of unlabeled issues per execution
@@ -104,7 +114,7 @@ class LabelBot:
                         for comment in comments:
                             if "@mxnet-label-bot" in comment['body']:
                                 labels += self.tokenize(comment['body'])
-                                logging.info("issue: {}, comment: {}".format(str(item['number']),comment['body']))
+                                logging.debug("issue: {}, comment: {}".format(str(item['number']),comment['body']))
                         if labels != []:
                             issues.append({"issue": item['number'], "labels": labels})
         return issues
@@ -152,4 +162,3 @@ class LabelBot:
         self.find_all_labels()
         for issue in issues:
             self.add_github_labels(issue['issue'], issue['labels'])
-

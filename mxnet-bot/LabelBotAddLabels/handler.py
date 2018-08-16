@@ -24,7 +24,12 @@ logging.getLogger('botocore').setLevel(logging.CRITICAL)
 
 def label_bot_lambda(event, context):
     lb = LabelBot(secret=True)
-    data = lb.find_notifications()
-    lb.label(data)
-    return "Lambda is triggered successfully!"
+    remaining = lb.get_rate_limit()
+    if remaining >= 4000:
+        data = lb.find_notifications()
+        lb.label(data)
+        remaining = lb.get_rate_limit()
+        return "Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining)
+    else:
+        return "Lambda failed triggered (out of limits: {})".format(remaining)
 
