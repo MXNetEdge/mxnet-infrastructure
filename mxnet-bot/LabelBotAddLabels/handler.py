@@ -28,8 +28,8 @@ def label_bot_lambda(event, context):
     if remaining >= 4000:
         data = lb.find_notifications()
         lb.label(data)
-        lb.get_rate_limit()
-        return "Lambda is triggered successfully! (remaining HTTP request: {}".format(remaining)
+        remaining = lb.get_rate_limit()
+        return "Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining)
     else:
         return "Lambda failed triggered (out of limits: {})".format(remaining)
 

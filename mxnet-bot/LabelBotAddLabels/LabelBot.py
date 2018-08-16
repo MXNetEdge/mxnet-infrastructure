@@ -42,7 +42,6 @@ class LabelBot:
                      auth = self.auth)
         res.raise_for_status()
         data = res.json()['rate']
-        logging.info("current API status: " + str(data))
         return data['remaining']
 
     def get_secret(self):
