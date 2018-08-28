@@ -37,7 +37,6 @@ provider:
        Action:
          - "secretsmanager:GetSecretValue"
          - "secretsmanager:DescribeSecret"
-       # replace resource with your secret's ARN
        Resource: "arn:aws:secretsmanager:us-west-2:139068448383:secret:GitHubLabelBotCredentials-7WcyTN"
     -  Effect: "Allow"
        Action:
@@ -51,9 +50,6 @@ functions:
     events:
       - schedule: rate(5 minutes)
     environment:
-    # replace region_name with your secret's region
       region_name : "us-west-2"
-    # replace secret_name with your secret's name
       secret_name : "GitHubLabelBotCredentials"
-    # replace REPO with "apache/incubator-mxnet"
       repo : "apache/incubator-mxnet"
