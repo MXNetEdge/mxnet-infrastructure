@@ -57,7 +57,9 @@ def predict():
     # data would be a json file {"issues":[1,2,3]}
     data = request.get_json()["issues"]
     # predictions = predict_labels.predict(data)
-    predictions = predictor.predict(data)
+    predictions = []
+    if len(data) != 0:
+        predictions = predictor.predict(data)
     response = []
     for i in range(len(data)):
         response.append({"number": data[i], "predictions": predictions[i]})
