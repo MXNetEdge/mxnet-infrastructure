@@ -11,6 +11,9 @@ This bot serves to help non-committers add labels to GitHub issues.
     1. In variable "github_credentials", fill in github_user and github_oauth_token. If you don't want to fill in here, then you can leave them blank.
        After you set up a secret, you can go to [AWS Secrets Manager Console](https://console.aws.amazon.com/secretsmanager) console to manually fill in secret values.
     2. In variable "secret_name", fill in the name of your secret. ie:"github/credentials"
+
+**Note:** Do *not*  commit credentials that you have assigned in variables.tf to the GitHub repo
+
 * Run `terraform apply`. It will create the secret. Once setup, it will output the secret ARN. Write it down. 
  <div align="center">
         <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-08-02+at+9.42.56+PM.png" ><br>
