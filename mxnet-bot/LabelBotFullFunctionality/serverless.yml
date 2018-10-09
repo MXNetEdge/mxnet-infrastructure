@@ -19,6 +19,9 @@
 
 service: LabelBot
 
+custom:
+  queueName: LabelSQS
+
 package:
   exclude:
     - ./**
@@ -37,19 +40,42 @@ provider:
        Action:
          - "secretsmanager:GetSecretValue"
          - "secretsmanager:DescribeSecret"
-       Resource: "arn:aws:secretsmanager:us-west-2:139068448383:secret:GitHubLabelBotCredentials-7WcyTN"
+       Resource: "arn:aws:secretsmanager:us-east-1:968277166688:secret:github/credentials-RBCFdt"
     -  Effect: "Allow"
        Action:
          - "secretsmanager:ListSecrets"
        Resource: "*"
+    -  Effect: "Allow"
+       Action:
+         - "sqs:SendMessage"
+       Resource:
+         Fn::GetAtt: [ SQSQueue, Arn ]
 
 functions:
+  send:
+    handler: handler.send_to_sqs
+    environment:
+      SQS_URL:
+        Ref: SQSQueue
+    timeout: 30
+    events:
+      - http: POST send_to_sqs
+
   label:
     handler: handler.label_bot_lambda
-
     events:
-      - schedule: rate(5 minutes)
+      - sqs:
+          arn:
+            Fn::GetAtt: [ SQSQueue, Arn ]
     environment:
-      region_name : "us-west-2"
-      secret_name : "GitHubLabelBotCredentials"
-      repo : "apache/incubator-mxnet"
+      region_name : "us-east-1"
+      secret_name : "github/credentials"
+      repo : "harshp8l/mxnet-infrastructure"
+
+resources:
+  Resources:
+    SQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:custom.queueName}
+        VisibilityTimeout: 210

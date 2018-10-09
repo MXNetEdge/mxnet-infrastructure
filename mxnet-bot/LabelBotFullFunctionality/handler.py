@@ -16,16 +16,38 @@
 # under the License.
 
 # lambda handler
+import os
+import boto3
 from LabelBot import LabelBot
 import logging
 logging.getLogger().setLevel(logging.INFO)
 logging.getLogger('boto3').setLevel(logging.CRITICAL)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
+SQS_CLIENT = boto3.client('sqs')
+
+
+def send_to_sqs(event, context):
+
+    print(SQS_CLIENT.send_message(
+        QueueUrl=os.getenv('SQS_URL'),
+        MessageBody=str(event)
+        ))
+
+    # Successful response -- assuming message will be sent correctly to SQS
+    return {
+        "statusCode": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": 'Success'
+    }
+
 
 def label_bot_lambda(event, context):
     lb = LabelBot(secret=True)
     remaining = lb.get_rate_limit()
+
     if remaining >= 4000:
+        ret = lb.add_label(event)
+        print(ret)
         data = lb.find_notifications()
         lb.label(data)
         remaining = lb.get_rate_limit()

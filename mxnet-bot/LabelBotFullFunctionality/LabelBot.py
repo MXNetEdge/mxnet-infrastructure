@@ -162,3 +162,6 @@ class LabelBot:
         self.find_all_labels()
         for issue in issues:
             self.add_github_labels(issue['issue'], issue['labels'])
+
+    def add_label(self, event):
+        return "Add Label Function"
