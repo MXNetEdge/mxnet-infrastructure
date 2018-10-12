@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import ast
 import json
 import os
 from botocore.vendored import requests
@@ -147,6 +148,7 @@ class LabelBot:
         # clean labels, remove duplicated spaces. ex: "hello  world" -> "hello world"
         labels = [" ".join(label.split()) for label in labels]
         labels = [label for label in labels if label.lower() in self.all_labels]
+
         response = requests.post(issue_labels_url, json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
             logging.info('Successfully add labels to {}: {}.'.format(str(issue_num), str(labels)))
@@ -163,5 +165,93 @@ class LabelBot:
         for issue in issues:
             self.add_github_labels(issue['issue'], issue['labels'])
 
-    def add_label(self, event):
-        return "Add Label Function"
+    def remove_github_labels(self, issue_num, labels):
+        """
+        This method is to remove a list of labels to one issue.
+        First it will remove redundant white spaces from each label.
+        Then it will check whether labels exist in the repo.
+        At last, it will remove existing labels to the issue
+        """
+        assert self.all_labels, "Find all labels first"
+        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels/' \
+            .format(repo=self.repo, id=issue_num)
+        # clean labels, remove duplicated spaces. ex: "hello  world" -> "hello world"
+        labels = [" ".join(label.split()) for label in labels]
+        labels = [label for label in labels if label.lower() in self.all_labels]
+
+        for label in labels:
+            delete_label_url = issue_labels_url + label
+            response = requests.delete(delete_label_url, auth=self.auth)
+
+            if response.status_code == 200:
+                logging.info('Successfully removed label to {}: {}.'.format(str(issue_num), str(label)))
+            else:
+                logging.error("Could not remove the label")
+                logging.error(response.json())
+
+    def update_github_labels(self, issue_num, labels):
+        """
+        This method is to update a list of labels to one issue.
+        First it will remove redundant white spaces from each label.
+        Then it will check whether labels exist in the repo.
+        At last, it will update existing labels to the issue
+        """
+        assert self.all_labels, "Find all labels first"
+        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
+            .format(repo=self.repo, id=issue_num)
+        # clean labels, remove duplicated spaces. ex: "hello  world" -> "hello world"
+        labels = [" ".join(label.split()) for label in labels]
+        labels = [label for label in labels if label.lower() in self.all_labels]
+
+        response = requests.put(issue_labels_url, data=json.dumps(labels), auth=self.auth)
+        if response.status_code == 200:
+            logging.info('Successfully updated labels to {}: {}.'.format(str(issue_num), str(labels)))
+        else:
+            logging.error("Could not update the label")
+            logging.error(response.json())
+
+    def add_comment(self, issue_num, message):
+        """
+        This method will trigger a comment to an issue by the label bot
+        :param issue_num: The issue we want to comment
+        :param message: The comment message we want to send
+        """
+        send_msg = {"body": message}
+        issue_comments_url = 'https://api.github.com/repos/{repo}/issues/{id}/comments' \
+            .format(repo=self.repo, id=issue_num)
+        response = requests.post(issue_comments_url, data=json.dumps(send_msg), auth=self.auth)
+
+        if response.status_code == 201:
+            logging.info('Successfully commented')
+        else:
+            logging.error("Could not comment")
+
+    def parse_label(self, event):
+
+        # Grabs actual payload data of the appropriate GitHub event needed for labelling
+        if ast.literal_eval(event["Records"][0]['body'])['headers']["X-GitHub-Event"] == "issue_comment":
+            payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
+
+            labels = []
+            if "@mxnet-label-bot" in payload["comment"]["body"]:
+                labels += self.tokenize(payload["comment"]["body"])
+                self.find_all_labels()
+
+                if "@mxnet-label-bot, add" in payload["comment"]["body"]:
+                    self.add_github_labels(payload["issue"]["number"], labels)
+                    return "Added labels successfully"
+
+                elif "@mxnet-label-bot, remove" in payload["comment"]["body"]:
+                    self.remove_github_labels(payload["issue"]["number"], labels)
+                    return "Removed labels successfully"
+
+                elif "@mxnet-label-bot, update" in payload["comment"]["body"]:
+                    self.update_github_labels(payload["issue"]["number"], labels)
+                    return "Updated labels successfully"
+
+                else:
+                    return "Unrecognized format for the mxnet-label-bot"
+            else:
+                return "Not a comment referencing the mxnet-label-bot"
+        else:
+            return "Not an issue comment"

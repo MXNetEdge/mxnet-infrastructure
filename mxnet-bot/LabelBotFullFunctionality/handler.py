@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# lambda handler
 import os
 import boto3
 from LabelBot import LabelBot
@@ -25,10 +24,9 @@ logging.getLogger('boto3').setLevel(logging.CRITICAL)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
 SQS_CLIENT = boto3.client('sqs')
 
-
 def send_to_sqs(event, context):
 
-    print(SQS_CLIENT.send_message(
+    response = (SQS_CLIENT.send_message(
         QueueUrl=os.getenv('SQS_URL'),
         MessageBody=str(event)
         ))
@@ -46,10 +44,7 @@ def label_bot_lambda(event, context):
     remaining = lb.get_rate_limit()
 
     if remaining >= 4000:
-        ret = lb.add_label(event)
-        print(ret)
-        data = lb.find_notifications()
-        lb.label(data)
+        print("Response from Label Bot: " + str(lb.parse_label(event)))
         remaining = lb.get_rate_limit()
         return "Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining)
     else:
