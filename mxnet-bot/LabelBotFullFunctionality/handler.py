@@ -44,7 +44,7 @@ def label_bot_lambda(event, context):
     remaining = lb.get_rate_limit()
 
     if remaining >= 4000:
-        print("Response from Label Bot: " + str(lb.parse_label(event)))
+        print("Response from Label Bot: " + str(lb.parse_webhook_data(event)))
         remaining = lb.get_rate_limit()
         return "Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining)
     else:

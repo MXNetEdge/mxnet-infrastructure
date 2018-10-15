@@ -18,17 +18,16 @@ import ast
 import json
 import os
 from botocore.vendored import requests
-import re
 import logging
 import secret_manager
 
 
 class LabelBot:
 
-    def __init__(self, 
-                 repo=os.environ.get("repo"), 
-                 github_user=None, 
-                 github_oauth_token=None, 
+    def __init__(self,
+                 repo=os.environ.get("repo"),
+                 github_user=None,
+                 github_oauth_token=None,
                  secret=True):
         self.repo = repo
         self.github_user = github_user
@@ -40,7 +39,7 @@ class LabelBot:
 
     def get_rate_limit(self):
         res = requests.get('https://api.github.com/{}'.format('rate_limit'),
-                     auth = self.auth)
+                           auth=self.auth)
         res.raise_for_status()
         data = res.json()['rate']
         return data['remaining']
@@ -57,16 +56,9 @@ class LabelBot:
         """
         This method is to extract labels from comments
         """
-        substring = string[string.find('[')+1: string.rfind(']')] 
+        substring = string[string.find('[') + 1: string.rfind(']')]
         labels = [' '.join(label.split()) for label in substring.split(',')]
         return labels
-
-    def clean_string(self, raw_string, sub_string):
-        """
-        This method is to convert all non-alphanumeric characters from raw_string to sub_string
-        """
-        cleans = re.sub("[^0-9a-zA-Z]", sub_string, raw_string)
-        return cleans.lower()
 
     def count_pages(self, obj, state='open'):
         """
@@ -86,75 +78,20 @@ class LabelBot:
             return 1
         return int(self.clean_string(response.headers['link'], " ").split()[-3])
 
-    def find_notifications(self):
-        """
-        This method is to find comments which @mxnet-label-bot
-        @:return [{"issue" : issue_id, "labels": []},...]
-        """
-        issues = []
-        pages = self.count_pages("issues")
-        for page in range(1, pages+1):
-            url = 'https://api.github.com/repos/{}/{}'.format(self.repo, 'issues')
-            response = requests.get(url,
-                                    {'state': 'open',
-                                     'base': 'master',
-                                     'sort': 'created',
-                                     'direction': 'desc',
-                                     'page': page,
-                                     'per_page': 100},
-                                     auth=self.auth)
-            for item in response.json():
-                # limit the amount of unlabeled issues per execution
-                if len(issues) >= 50:
-                    break
-                if not item['labels']:
-                    if item['comments'] != 0:
-                        labels = []
-                        comments_url = "https://api.github.com/repos/{}/issues/{}/comments".format(self.repo,item['number'])
-                        comments = requests.get(comments_url, auth=self.auth).json()
-                        for comment in comments:
-                            if "@mxnet-label-bot" in comment['body']:
-                                labels += self.tokenize(comment['body'])
-                                logging.debug("issue: {}, comment: {}".format(str(item['number']),comment['body']))
-                        if labels != []:
-                            issues.append({"issue": item['number'], "labels": labels})
-        return issues
-
     def find_all_labels(self):
         """
         This method is to find all existing labels in the repo
         """
         pages = self.count_pages("labels")
         all_labels = []
-        for page in range(1, pages+1):
+        for page in range(1, pages + 1):
             url = 'https://api.github.com/repos/' + self.repo + '/labels?page=' + str(page) \
-                + '&per_page=30'.format(repo=self.repo)
+                  + '&per_page=30'.format(repo=self.repo)
             response = requests.get(url, auth=self.auth)
             for item in response.json():
                 all_labels.append(item['name'].lower())
         self.all_labels = set(all_labels)
         return set(all_labels)
-
-    def add_github_labels(self, issue_num, labels):
-        """
-        This method is to add a list of labels to one issue.
-        First it will remove redundant white spaces from each label.
-        Then it will check whether labels exist in the repo.
-        At last, it will add existing labels to the issue
-        """
-        assert self.all_labels, "Find all labels first"
-        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels'\
-                            .format(repo=self.repo, id=issue_num)
-        # clean labels, remove duplicated spaces. ex: "hello  world" -> "hello world"
-        labels = [" ".join(label.split()) for label in labels]
-        labels = [label for label in labels if label.lower() in self.all_labels]
-
-        response = requests.post(issue_labels_url, json.dumps(labels), auth=self.auth)
-        if response.status_code == 200:
-            logging.info('Successfully add labels to {}: {}.'.format(str(issue_num), str(labels)))
-        else:
-            logging.error("Could not add the label")
-            logging.error(response.json())
 
     def label(self, issues):
         """
@@ -165,6 +102,38 @@ class LabelBot:
         for issue in issues:
             self.add_github_labels(issue['issue'], issue['labels'])
 
+    def format_labels(self, labels):
+        """
+        This method formats labels that a user specifies for a specific issue. This is meant
+        to provide functionality for the operations on labels
+        :param issue_num: The issue we want to label
+        :param labels: The labels we want to format
+        :return: Formatted labels to send for CRUD operations
+        """
+        assert self.all_labels, "Find all labels first"
+        # clean labels, remove duplicated spaces. ex: "hello  world" -> "hello world"
+        labels = [" ".join(label.split()) for label in labels]
+        labels = [label for label in labels if label.lower() in self.all_labels]
+        return labels
+
+    def add_github_labels(self, issue_num, labels):
+        """
+        This method is to add a list of labels to one issue.
+        First it will remove redundant white spaces from each label.
+        Then it will check whether labels exist in the repo.
+        At last, it will add existing labels to the issue
+        """
+        labels = self.format_labels(labels)
+        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
+            .format(repo=self.repo, id=issue_num)
+
+        response = requests.post(issue_labels_url, json.dumps(labels), auth=self.auth)
+        if response.status_code == 200:
+            logging.info('Successfully added labels to {}: {}.'.format(str(issue_num), str(labels)))
+        else:
+            logging.error("Could not add the labels")
+            logging.error(response.json())
+
     def remove_github_labels(self, issue_num, labels):
         """
         This method is to remove a list of labels to one issue.
@@ -172,21 +141,17 @@ class LabelBot:
         Then it will check whether labels exist in the repo.
         At last, it will remove existing labels to the issue
         """
-        assert self.all_labels, "Find all labels first"
-        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels/' \
+        labels = self.format_labels(labels)
+        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
             .format(repo=self.repo, id=issue_num)
-        # clean labels, remove duplicated spaces. ex: "hello  world" -> "hello world"
-        labels = [" ".join(label.split()) for label in labels]
-        labels = [label for label in labels if label.lower() in self.all_labels]
 
         for label in labels:
             delete_label_url = issue_labels_url + label
             response = requests.delete(delete_label_url, auth=self.auth)
-
             if response.status_code == 200:
                 logging.info('Successfully removed label to {}: {}.'.format(str(issue_num), str(label)))
             else:
-                logging.error("Could not remove the label")
+                logging.error("Could not remove the labels")
                 logging.error(response.json())
 
     def update_github_labels(self, issue_num, labels):
@@ -196,18 +161,15 @@ class LabelBot:
         Then it will check whether labels exist in the repo.
         At last, it will update existing labels to the issue
         """
-        assert self.all_labels, "Find all labels first"
+        labels = self.format_labels(labels)
         issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
             .format(repo=self.repo, id=issue_num)
-        # clean labels, remove duplicated spaces. ex: "hello  world" -> "hello world"
-        labels = [" ".join(label.split()) for label in labels]
-        labels = [label for label in labels if label.lower() in self.all_labels]
 
         response = requests.put(issue_labels_url, data=json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
             logging.info('Successfully updated labels to {}: {}.'.format(str(issue_num), str(labels)))
         else:
-            logging.error("Could not update the label")
+            logging.error("Could not update the labels")
             logging.error(response.json())
 
     def add_comment(self, issue_num, message):
@@ -219,19 +181,31 @@ class LabelBot:
         send_msg = {"body": message}
         issue_comments_url = 'https://api.github.com/repos/{repo}/issues/{id}/comments' \
             .format(repo=self.repo, id=issue_num)
-        response = requests.post(issue_comments_url, data=json.dumps(send_msg), auth=self.auth)
 
+        response = requests.post(issue_comments_url, data=json.dumps(send_msg), auth=self.auth)
         if response.status_code == 201:
             logging.info('Successfully commented')
         else:
             logging.error("Could not comment")
 
-    def parse_label(self, event):
+    def parse_webhook_data(self, event):
+        """
+        This method triggers the label bot when the appropriate
+        GitHub event is recognized by use of a webhook
+        :param event: The event data that is received whenever a github issue, issue comment, etc. is made
+        :return: Log statements which we can track in lambda
+        """
+        try:
+            github_event = ast.literal_eval(event["Records"][0]['body'])['headers']["X-GitHub-Event"]
+        except KeyError:
+            raise json.ParseError('Expected a GitHub event')
+            return "Not a GitHub event"
 
         # Grabs actual payload data of the appropriate GitHub event needed for labelling
-        if ast.literal_eval(event["Records"][0]['body'])['headers']["X-GitHub-Event"] == "issue_comment":
+        if github_event == "issue_comment":
             payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
 
+            # Acquiring labels specific to this repo
             labels = []
             if "@mxnet-label-bot" in payload["comment"]["body"]:
                 labels += self.tokenize(payload["comment"]["body"])

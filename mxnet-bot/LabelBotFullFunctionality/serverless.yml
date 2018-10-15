@@ -70,7 +70,7 @@ functions:
     environment:
       region_name : "us-east-1"
       secret_name : "github/credentials"
-      repo : "harshp8l/mxnet-infrastructure"
+      repo : "harshp8l/incubator-mxnet"
 
 resources:
   Resources:
