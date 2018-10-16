@@ -207,6 +207,18 @@ class LabelBot:
             logging.error("Could not comment")
             return "Failed to comment"
 
+    def label_action(self, actions):
+
+        if "add" in actions:
+            return self.add_github_labels(actions["add"][0], actions["add"][1])
+        elif "remove" in actions:
+            return self.remove_github_labels(actions["remove"][0], actions["remove"][1])
+        elif "update" in actions:
+            return self.update_github_labels(actions["update"][0], actions["update"][1])
+
+        else:
+            return "Unrecognized action format for the mxnet-label-bot"
+
     def parse_webhook_data(self, event):
         """
         This method triggers the label bot when the appropriate
@@ -217,31 +229,31 @@ class LabelBot:
         try:
             github_event = ast.literal_eval(event["Records"][0]['body'])['headers']["X-GitHub-Event"]
         except KeyError:
-            raise json.ParseError('Expected a GitHub Event')
             return "Not a GitHub Event"
+        try:
+            payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
+        except ValueError:
+            return "Decoding JSON for payload failed"
 
         # Grabs actual payload data of the appropriate GitHub event needed for labelling
         if github_event == "issue_comment":
-            payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
 
             # Acquiring labels specific to this repo
             labels = []
+            actions = {}
             if "@mxnet-label-bot" in payload["comment"]["body"]:
                 labels += self.tokenize(payload["comment"]["body"])
+                if not labels:
+                    return "Unable to gather labels from issue comments"
+
                 self.find_all_labels()
 
-                if "@mxnet-label-bot add" in payload["comment"]["body"]:
-                    return self.add_github_labels(payload["issue"]["number"], labels)
+                action = payload["comment"]["body"].split(" ")[1]
+                issue_num = payload["issue"]["number"]
+                actions[action] = issue_num, labels
+                return self.label_action(actions)
 
-                elif "@mxnet-label-bot remove" in payload["comment"]["body"]:
-                    return self.remove_github_labels(payload["issue"]["number"], labels)
-
-                elif "@mxnet-label-bot update" in payload["comment"]["body"]:
-                    return self.update_github_labels(payload["issue"]["number"], labels)
-
-                else:
-                    return "Unrecognized format for the mxnet-label-bot"
             else:
-                return "Not a comment referencing the mxnet-label-bot"
+                return "Not a comment referencing the mxnet-label-bot for action"
         else:
-            return "Not an issue comment"
+            return "GitHub Event unsupported by Label Bot"
