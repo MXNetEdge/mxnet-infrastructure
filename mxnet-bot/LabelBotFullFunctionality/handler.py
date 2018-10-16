@@ -40,7 +40,7 @@ def send_to_sqs(event, context):
 
 
 def label_bot_lambda(event, context):
-    lb = LabelBot(secret=True)
+    lb = LabelBot(apply_secret=True)
     remaining = lb.get_rate_limit()
 
     if remaining >= 4000:
