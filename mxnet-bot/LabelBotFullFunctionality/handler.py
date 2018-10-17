@@ -30,6 +30,7 @@ def send_to_sqs(event, context):
         QueueUrl=os.getenv('SQS_URL'),
         MessageBody=str(event)
         ))
+    print(response)
 
     # Successful response -- assuming message will be sent correctly to SQS
     return {
@@ -40,13 +41,12 @@ def send_to_sqs(event, context):
 
 
 def label_bot_lambda(event, context):
-    lb = LabelBot(apply_secret=True)
-    remaining = lb.get_rate_limit()
+    label_bot = LabelBot(apply_secret=True)
+    remaining = label_bot._get_rate_limit()
 
     if remaining >= 4000:
-        print("Response from Label Bot: " + str(lb.parse_webhook_data(event)))
-        remaining = lb.get_rate_limit()
-        return "Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining)
+        logging.info("Response from Label Bot: {}".format(str(label_bot.parse_webhook_data(event))))
+        remaining = label_bot._get_rate_limit()
+        logging.info("Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining))
     else:
-        return "Lambda failed triggered (out of limits: {})".format(remaining)
-
+        logging.info("Lambda failed triggered (out of limits: {})".format(remaining))
