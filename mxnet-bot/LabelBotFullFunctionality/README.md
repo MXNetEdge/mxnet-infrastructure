@@ -57,6 +57,3 @@ One thing to mention: this IAM role only has ***Read*** access to the secret cre
     <div align="center">
         <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-07-31+at+3.10.26+PM.png" width="600" height="150"><br>
     </div>
-
-
-

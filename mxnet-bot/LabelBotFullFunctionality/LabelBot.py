@@ -42,11 +42,11 @@ class LabelBot:
         self.github_user = github_user
         self.github_oauth_token = github_oauth_token
         if apply_secret:
-            self.get_secret()
+            self._get_secret()
         self.auth = (self.github_user, self.github_oauth_token)
         self.all_labels = None
 
-    def get_rate_limit(self):
+    def _get_rate_limit(self):
         """
         This method gets the remaining rate limit that is left from the GitHub API
         :return Remaining API requests left that GitHub will allow
@@ -57,7 +57,7 @@ class LabelBot:
         data = res.json()['rate']
         return data['remaining']
 
-    def get_secret(self):
+    def _get_secret(self):
         """
         This method is to get secret value from Secrets Manager
         """
@@ -65,7 +65,7 @@ class LabelBot:
         self.github_user = secret["github_user"]
         self.github_oauth_token = secret["github_oauth_token"]
 
-    def tokenize(self, string):
+    def _tokenize(self, string):
         """
         This method is to extract labels from comments
         :param string: String parsed from a GitHub comment
@@ -75,17 +75,17 @@ class LabelBot:
         labels = [' '.join(label.split()) for label in substring.split(',')]
         return labels
 
-    def clean_string(self, raw_string, sub_string):
+    def _clean_string(self, raw_string, sub_string):
         """
         This method is to convert all non-alphanumeric characters from raw_string to sub_string
         :param raw_string The original string messy string
         :param sub_string The string we want to convert to
         :return Fully converted string
         """
-        cleans = re.sub("[^0-9a-zA-Z]", sub_string, raw_string)
-        return cleans.lower()
+        converted_string = re.sub("[^0-9a-zA-Z]", sub_string, raw_string)
+        return converted_string.lower()
 
-    def find_all_labels(self):
+    def _find_all_labels(self):
         """
         This method finds all existing labels in the repo
         :return A set of all labels which have been extracted from the repo
@@ -98,7 +98,7 @@ class LabelBot:
         if "link" not in response.headers:
             pages = 1
         else:
-            pages = int(self.clean_string(response.headers['link'], " ").split()[-3])
+            pages = int(self._clean_string(response.headers['link'], " ").split()[-3])
 
         all_labels = []
         for page in range(1, pages + 1):
@@ -110,7 +110,7 @@ class LabelBot:
         self.all_labels = set(all_labels)
         return set(all_labels)
 
-    def format_labels(self, labels):
+    def _format_labels(self, labels):
         """
         This method formats labels that a user specifies for a specific issue. This is meant
         to provide functionality for the operations on labels
