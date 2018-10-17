@@ -19,7 +19,7 @@ import os
 import boto3
 from LabelBot import LabelBot
 import logging
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.ERROR)
 logging.getLogger('boto3').setLevel(logging.CRITICAL)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
 SQS_CLIENT = boto3.client('sqs')
@@ -32,7 +32,6 @@ def send_to_sqs(event, context):
         ))
     print(response)
 
-    # Successful response -- assuming message will be sent correctly to SQS
     return {
         "statusCode": 200,
         "headers": {"Content-Type": "application/json"},
