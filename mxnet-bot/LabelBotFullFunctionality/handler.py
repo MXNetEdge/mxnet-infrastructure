@@ -24,18 +24,17 @@ logging.getLogger('boto3').setLevel(logging.CRITICAL)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
 SQS_CLIENT = boto3.client('sqs')
 
+
 def send_to_sqs(event, context):
 
     response = (SQS_CLIENT.send_message(
         QueueUrl=os.getenv('SQS_URL'),
         MessageBody=str(event)
         ))
-    print(response)
 
     return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": 'Success'
+        "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+        "headers": {"Content-Type": "application/json"}
     }
 
 
