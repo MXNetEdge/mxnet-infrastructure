@@ -260,3 +260,4 @@ class LabelBot:
 
         else:
             logging.error("GitHub Event unsupported by Label Bot")
+
