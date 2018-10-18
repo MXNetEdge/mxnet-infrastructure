@@ -19,7 +19,7 @@ import os
 import boto3
 from LabelBot import LabelBot
 import logging
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 logging.getLogger('boto3').setLevel(logging.CRITICAL)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
 SQS_CLIENT = boto3.client('sqs')
@@ -43,7 +43,7 @@ def label_bot_lambda(event, context):
     remaining = label_bot._get_rate_limit()
 
     if remaining >= 4000:
-        logging.info("Response from Label Bot: {}".format(str(label_bot.parse_webhook_data(event))))
+        label_bot.parse_webhook_data(event)
         remaining = label_bot._get_rate_limit()
         logging.info("Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining))
     else:

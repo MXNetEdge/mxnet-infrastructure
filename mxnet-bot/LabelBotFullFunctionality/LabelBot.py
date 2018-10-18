@@ -227,12 +227,12 @@ class LabelBot:
         try:
             github_event = ast.literal_eval(event["Records"][0]['body'])['headers']["X-GitHub-Event"]
         except KeyError:
-            return "Not a GitHub Event"
+            raise Exception("Not a GitHub Event")
 
         try:
             payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
         except ValueError:
-            return "Decoding JSON for payload failed"
+            raise Exception("Decoding JSON for payload failed")
 
         # Grabs actual payload data of the appropriate GitHub event needed for labelling
         if github_event == "issue_comment":
@@ -243,23 +243,20 @@ class LabelBot:
             if "@mxnet-label-bot" in payload["comment"]["body"]:
                 labels += self._tokenize(payload["comment"]["body"])
                 if not labels:
-                    return "Unable to gather labels from issue comments"
+                    raise Exception("Unable to gather labels from issue comments")
 
                 self._find_all_labels()
                 if not self.all_labels:
-                    return "Unable to gather labels from the repo"
+                    raise Exception("Unable to gather labels from the repo")
                 for label in labels:
                     if label not in self.all_labels:
-                        return "Provided labels don't match labels from the repo"
+                        raise Exception("Provided labels don't match labels from the repo")
 
                 action = payload["comment"]["body"].split(" ")[1]
                 issue_num = payload["issue"]["number"]
                 actions[action] = issue_num, labels
                 if not self.label_action(actions):
-                    return "Unrecognized label action for the mxnet-label-bot"
+                    raise Exception("Unrecognized label action for the mxnet-label-bot")
 
-                return "Success"
-            else:
-                return "Not a comment referencing the mxnet-label-bot for action"
         else:
-            return "GitHub Event unsupported by Label Bot"
+            logging.error("GitHub Event unsupported by Label Bot")
