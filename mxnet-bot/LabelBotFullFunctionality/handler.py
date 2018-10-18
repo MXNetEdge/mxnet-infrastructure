@@ -19,7 +19,7 @@ import os
 import boto3
 from LabelBot import LabelBot
 import logging
-logging.getLogger().setLevel(logging.ERROR)
+logging.getLogger().setLevel(logging.DEBUG)
 logging.getLogger('boto3').setLevel(logging.CRITICAL)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
 SQS_CLIENT = boto3.client('sqs')

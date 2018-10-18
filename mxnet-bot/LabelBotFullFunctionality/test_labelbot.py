@@ -34,23 +34,23 @@ class TestLabelBot(unittest.TestCase):
     def setUp(self):
         self.lb = LabelBot(repo="harshp8l/mxnet-infrastructure",  apply_secret=True)
 
-    def test_add_github_labels(self):
+    def test_add_labels(self):
         with patch('LabelBot.requests.post') as mocked_post:
             mocked_post.return_value.status_code = 200
             self.lb.all_labels = ['sample_label', 'another_label', 'all_labels']
-            self.assertTrue(self.lb.add_github_labels(issue_num=0, labels=['sample_label']))
+            self.assertTrue(self.lb.add_labels(issue_num=0, labels=['sample_label']))
 
-    def test_remove_github_labels(self):
+    def test_remove_labels(self):
         with patch('LabelBot.requests.delete') as mocked_delete:
             mocked_delete.return_value.status_code = 200
             self.lb.all_labels = ['sample_label', 'another_label', 'all_labels']
-            self.assertTrue(self.lb.remove_github_labels(issue_num=0, labels=['sample_label']))
+            self.assertTrue(self.lb.remove_labels(issue_num=0, labels=['sample_label']))
 
-    def test_update_github_labels(self):
+    def test_update_labels(self):
         with patch('LabelBot.requests.put') as mocked_put:
             mocked_put.return_value.status_code = 200
             self.lb.all_labels = ['sample_label', 'another_label', 'all_labels']
-            self.assertTrue(self.lb.update_github_labels(issue_num=0, labels=['sample_label']))
+            self.assertTrue(self.lb.update_labels(issue_num=0, labels=['sample_label']))
 
 
 if __name__ == "__main__":

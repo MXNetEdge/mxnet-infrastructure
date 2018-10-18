@@ -123,7 +123,7 @@ class LabelBot:
         labels = [label for label in labels if label.lower() in self.all_labels]
         return labels
 
-    def add_github_labels(self, issue_num, labels):
+    def add_labels(self, issue_num, labels):
         """
         This method is to add a list of labels to one issue.
         It checks whether labels exist in the repo, and adds existing labels to the issue
@@ -143,7 +143,7 @@ class LabelBot:
                           .format(str(issue_num), str(labels), json.dumps(response.json())))
             return False
 
-    def remove_github_labels(self, issue_num, labels):
+    def remove_labels(self, issue_num, labels):
         """
         This method is to remove a list of labels to one issue.
         It checks whether labels exist in the repo, and removes existing labels to the issue
@@ -166,7 +166,7 @@ class LabelBot:
                 return False
         return True
 
-    def update_github_labels(self, issue_num, labels):
+    def update_labels(self, issue_num, labels):
         """
         This method is to update a list of labels to one issue.
         It checks whether labels exist in the repo, and updates existing labels to the issue
@@ -209,11 +209,11 @@ class LabelBot:
     def label_action(self, actions):
 
         if "add" in actions:
-            return self.add_github_labels(actions["add"][0], actions["add"][1])
+            return self.add_labels(actions["add"][0], actions["add"][1])
         elif "remove" in actions:
-            return self.remove_github_labels(actions["remove"][0], actions["remove"][1])
+            return self.remove_labels(actions["remove"][0], actions["remove"][1])
         elif "update" in actions:
-            return self.update_github_labels(actions["update"][0], actions["update"][1])
+            return self.update_labels(actions["update"][0], actions["update"][1])
         else:
             return False
 
