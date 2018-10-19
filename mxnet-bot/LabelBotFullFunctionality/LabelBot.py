@@ -258,9 +258,9 @@ class LabelBot:
                 self._find_all_labels()
                 if not self.all_labels:
                     raise Exception("Unable to gather labels from the repo")
-                for label in labels:
-                    if label not in self.all_labels:
-                        raise Exception("Provided labels don't match labels from the repo")
+
+                if not set(labels).intersection(set(self.all_labels)):
+                    raise Exception("Provided labels don't match labels from the repo")
 
                 action = payload["comment"]["body"].split(" ")[1]
                 issue_num = payload["issue"]["number"]
