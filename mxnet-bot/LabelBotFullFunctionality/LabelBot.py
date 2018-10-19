@@ -75,7 +75,7 @@ class LabelBot:
         labels = [' '.join(label.split()) for label in substring.split(',')]
         return labels
 
-    def _clean_string(self, raw_string, sub_string):
+    def _ascii_only(self, raw_string, sub_string):
         """
         This method is to convert all non-alphanumeric characters from raw_string to sub_string
         :param raw_string The original string messy string
@@ -98,7 +98,7 @@ class LabelBot:
         if "link" not in response.headers:
             pages = 1
         else:
-            pages = int(self._clean_string(response.headers['link'], " ").split()[-3])
+            pages = int(self._ascii_only(response.headers['link'], " ").split()[-3])
 
         all_labels = []
         for page in range(1, pages + 1):
@@ -129,6 +129,7 @@ class LabelBot:
         It checks whether labels exist in the repo, and adds existing labels to the issue
         :param issue_num: The specific issue number we want to label
         :param labels: The labels which we want to add
+        :return Response denoting success or failure for logging purposes
         """
         labels = self._format_labels(labels)
         issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
@@ -207,7 +208,12 @@ class LabelBot:
             return False
 
     def label_action(self, actions):
-
+        """
+        This method will perform an actions for the labels that are provided. This function delegates
+        the appropriate action to the correct methods.
+        :param actions: The action we want to take on the label
+        :return Response denoting success or failure for logging purposes
+        """
         if "add" in actions:
             return self.add_labels(actions["add"][0], actions["add"][1])
         elif "remove" in actions:

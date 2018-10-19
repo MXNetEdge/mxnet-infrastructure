@@ -39,6 +39,7 @@ def send_to_sqs(event, context):
 
 
 def label_bot_lambda(event, context):
+
     label_bot = LabelBot(apply_secret=True)
     remaining = label_bot._get_rate_limit()
 
@@ -48,3 +49,4 @@ def label_bot_lambda(event, context):
         logging.info("Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining))
     else:
         logging.info("Lambda failed triggered (out of limits: {})".format(remaining))
+
