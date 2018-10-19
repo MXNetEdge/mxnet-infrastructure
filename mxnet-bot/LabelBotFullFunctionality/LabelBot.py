@@ -188,25 +188,6 @@ class LabelBot:
                           .format(str(issue_num), str(labels), json.dumps(response.json())))
             return False
 
-    def create_comment(self, issue_num, message):
-        """
-        This method will trigger a comment to an issue by the label bot
-        :param issue_num: The issue we want to comment
-        :param message: The comment message we want to send
-        :return Response denoting success or failure for logging purposes
-        """
-        send_msg = {"body": message}
-        issue_comments_url = 'https://api.github.com/repos/{repo}/issues/{id}/comments' \
-            .format(repo=self.repo, id=issue_num)
-
-        response = requests.post(issue_comments_url, data=json.dumps(send_msg), auth=self.auth)
-        if response.status_code == 200:
-            logging.info('Successfully commented {} to: {}'.format(send_msg, issue_num))
-            return True
-        else:
-            logging.error("Could not comment \n".format(json.dumps(response.json())))
-            return False
-
     def label_action(self, actions):
         """
         This method will perform an actions for the labels that are provided. This function delegates
