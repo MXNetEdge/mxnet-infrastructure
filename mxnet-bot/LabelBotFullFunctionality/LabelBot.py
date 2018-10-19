@@ -21,6 +21,8 @@ import re
 from botocore.vendored import requests
 import logging
 import secret_manager
+import hmac
+import hashlib
 
 
 class LabelBot:
@@ -64,6 +66,7 @@ class LabelBot:
         secret = json.loads(secret_manager.get_secret())
         self.github_user = secret["github_user"]
         self.github_oauth_token = secret["github_oauth_token"]
+        self.webhook_secret = secret["webhook_secret"]
 
     def _tokenize(self, string):
         """
@@ -204,6 +207,23 @@ class LabelBot:
         else:
             return False
 
+    def _secure_webhook(self, event):
+
+        # Validating github event is signed
+        try:
+            git_signed = ast.literal_eval(event["Records"][0]['body'])['headers']["X-Hub-Signature"]
+        except KeyError:
+            raise Exception("WebHook from GitHub is not signed")
+        git_signed = git_signed.replace('sha1=', '')
+
+        # Signing our event with the same secret as what we assigned to github event
+        secret = self.webhook_secret
+        body = ast.literal_eval(event["Records"][0]['body'])['body']
+        secret_sign = hmac.new(key=secret.encode('utf-8'), msg=body.encode('utf-8'), digestmod=hashlib.sha1).hexdigest()
+
+        # Validating signatures match
+        return hmac.compare_digest(git_signed, secret_sign)
+
     def parse_webhook_data(self, event):
         """
         This method triggers the label bot when the appropriate
@@ -215,6 +235,9 @@ class LabelBot:
             github_event = ast.literal_eval(event["Records"][0]['body'])['headers']["X-GitHub-Event"]
         except KeyError:
             raise Exception("Not a GitHub Event")
+
+        if not self._secure_webhook(event):
+            raise Exception("Failed validate WebHook security")
 
         try:
             payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
