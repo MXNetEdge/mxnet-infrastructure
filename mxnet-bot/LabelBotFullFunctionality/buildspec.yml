@@ -1,0 +1,17 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo In install phase...
+      - npm install -g serverless
+  build:
+    commands:
+      - echo In build phase...
+      - cd mxnet-bot/LabelBotFullFunctionality
+      - serverless deploy -v
+
+artifacts:
+  files:
+    - mxnet-bot/LabelBotFullFunctionality/serverless.yml
+  discard-paths: yes

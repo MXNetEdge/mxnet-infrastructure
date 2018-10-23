@@ -237,7 +237,7 @@ class LabelBot:
             raise Exception("Not a GitHub Event")
 
         if not self._secure_webhook(event):
-            raise Exception("Failed validate WebHook security")
+            raise Exception("Failed to validate WebHook security")
 
         try:
             payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
