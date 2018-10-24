@@ -35,7 +35,7 @@ This bot serves to help non-committers add labels to GitHub issues.
 * Deploy    
 Open terminal, go to current directory. run 
 ```
-serverless deploy
+./deploy_bot.sh
 ```
 Then it will set up those AWS services:
 * An IAM role for label bot with policies:

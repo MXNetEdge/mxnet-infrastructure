@@ -40,7 +40,7 @@ provider:
        Action:
          - "secretsmanager:GetSecretValue"
          - "secretsmanager:DescribeSecret"
-       Resource: "arn:aws:secretsmanager:us-east-1:968277166688:secret:github/credentials-RBCFdt"
+       Resource: "arn:aws:secretsmanager:us-west-2:139068448383:secret:GitHubLabelBotCredentials-7WcyTN"
     -  Effect: "Allow"
        Action:
          - "secretsmanager:ListSecrets"
@@ -68,9 +68,9 @@ functions:
           arn:
             Fn::GetAtt: [ SQSQueue, Arn ]
     environment:
-      region_name : "us-east-1"
-      secret_name : "github/credentials"
-      repo : "harshp8l/incubator-mxnet"
+      region_name : "us-west-2"
+      secret_name : "GitHubLabelBotCredentials"
+      repo : "apache/incubator-mxnet"
 
 resources:
   Resources:
