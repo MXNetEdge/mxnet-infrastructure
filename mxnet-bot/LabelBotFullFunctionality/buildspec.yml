@@ -1,0 +1,18 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo In install phase...
+      - npm install -g serverless
+  build:
+    commands:
+      - echo In build phase...
+      - cd mxnet-bot/LabelBotFullFunctionality
+      - chmod 755 deploy_bot.sh
+      - ./deploy_bot.sh
+
+artifacts:
+  files:
+    - mxnet-bot/LabelBotFullFunctionality/serverless.yml
+  discard-paths: yes
