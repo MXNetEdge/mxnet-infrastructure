@@ -266,7 +266,7 @@ class LabelBot:
                 issue_num = payload["issue"]["number"]
                 actions[action] = issue_num, labels
                 if not self.label_action(actions):
-                    raise Exception("Unrecognized label action for the mxnet-label-bot")
+                    raise Exception("Unrecognized/Infeasible label action for the mxnet-label-bot")
 
         else:
             logging.error("GitHub Event unsupported by Label Bot")

@@ -9,7 +9,8 @@ phases:
     commands:
       - echo In build phase...
       - cd mxnet-bot/LabelBotFullFunctionality
-      - serverless deploy -v
+      - chmod 755 deploy_bot.sh
+      - ./deploy_bot.sh
 
 artifacts:
   files:
