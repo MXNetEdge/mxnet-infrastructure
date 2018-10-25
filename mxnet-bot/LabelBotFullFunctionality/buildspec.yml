@@ -5,6 +5,9 @@ phases:
     commands:
       - echo In install phase...
       - npm install -g serverless
+      - npm init -y
+      - npm install serverless-domain-manager --save-dev
+
   build:
     commands:
       - echo In build phase...
