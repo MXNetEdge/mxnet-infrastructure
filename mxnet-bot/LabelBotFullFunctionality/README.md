@@ -14,7 +14,11 @@ This bot serves to help non-committers add labels to GitHub issues.
 * Configure ***variables.tf***
     1. In variable "github_credentials", fill in github_user and github_oauth_token. If you don't want to fill in here, then you can leave them blank.
        After you set up a secret, you can go to [AWS Secrets Manager Console](https://console.aws.amazon.com/secretsmanager) console to manually fill in secret values.
-    2. In variable "secret_name", fill in the name of your secret. ie:"github/credentials"
+    2. In configuring a webhook for github, confirm that the content type you have set is of application/json and that the appropriate events that you would like to
+       trigger the webhook for are set. As an additional security measure,  under Content type configure a secret for your webhook. 
+       Be sure to include this secret as well in the variables.tf file (as a part of webhook_secret). Similarly, you can leave this blank and fill it in
+       later in the secrets manager console. 
+    3. In variable "secret_name", fill in the name of your secret. ie:"github/credentials"
 
 **Note:** Do *not*  commit credentials that you have assigned in variables.tf to the GitHub repo
 
