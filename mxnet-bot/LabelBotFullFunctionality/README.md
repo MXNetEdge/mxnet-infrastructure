@@ -61,3 +61,13 @@ One thing to mention: this IAM role only has ***Read*** access to the secret cre
     <div align="center">
         <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-07-31+at+3.10.26+PM.png" width="600" height="150"><br>
     </div>
+
+#### 4. DNS Service
+* In serverless.yml within the customDomain section specify the domain name you would like to use.
+* Similarly, specify the basePath and the stage (this correlates to your API Gateway function) i.e. /dev and dev stage.
+* After this run serverless create-domain (process may take some time and is meant to only run once)
+* You will need to request a Certificate for your new domain, so under AWS Certificate Manager add your domain name and validate using DNS service.
+* Afterwards run serverless deploy -v
+* Specify this domain name (and the specific endpoint where your function points to in the API Gateway Console)
+
+***Note:*** Verify that ACM certificate is created in us-east-1 (for edge apis) and is present and matches the certificate in the certificate section of API Gateway (Custom Domain Names)

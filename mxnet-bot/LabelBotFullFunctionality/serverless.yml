@@ -25,9 +25,9 @@ plugins:
 custom:
   queueName: LabelSQS
   customDomain:
-    domainName:
-    basePath: ''
-    stage: $(self:provider.stage)
+    domainName: 'deploy.mxnet-label-bot.de'
+    basePath: '/dev'
+    stage: dev
     createRoute53Record: true
 
 package:

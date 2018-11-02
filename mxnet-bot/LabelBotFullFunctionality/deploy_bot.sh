@@ -3,5 +3,4 @@
 set -e
 
 export AWS_PROFILE=mxnet-ci-dev
-sls create_domain
 sls deploy -v
