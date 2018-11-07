@@ -71,7 +71,8 @@ One thing to mention: this IAM role only has ***Read*** access to the secret cre
 * Afterwards run serverless deploy -v
 * Specify this domain name (and the specific endpoint where your function points to in the API Gateway Console)
 
-***Note:*** Verify that ACM certificate is created in us-east-1 (for edge apis) and is present and matches the certificate in the certificate section of API Gateway (Custom Domain Names)
+***Note:*** Verify that ACM certificate is created in us-east-1 (for edge apis) and is present and matches the certificate in the certificate section of API Gateway (Custom Domain Names).
+As well, make sure to set the appropriate CNAME certificate from Certificate Manager for the route53 domain.
 
 When wanting to update the stack using serverless deploy after initial launch, comment out
 in serverless.yml file the section regarding customDomain and plugins.
