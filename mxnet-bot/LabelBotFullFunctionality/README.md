@@ -65,8 +65,9 @@ One thing to mention: this IAM role only has ***Read*** access to the secret cre
 #### 4. DNS Service
 * In serverless.yml within the customDomain section specify the domain name you would like to use.
 * Similarly, specify the basePath and the stage (this correlates to your API Gateway function) i.e. /dev and dev stage.
-* After this run serverless create-domain (process may take some time and is meant to only run once)
 * You will need to request a Certificate for your new domain, so under AWS Certificate Manager add your domain name and validate using DNS service.
+* To install the plugin, run ``npm install serverless-domain-manager --save-dev``.
+* After this run ``serverless create_domain`` (process may take some time and is meant to only run once)
 * Afterwards run serverless deploy -v
 * Specify this domain name (and the specific endpoint where your function points to in the API Gateway Console)
 
