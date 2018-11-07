@@ -17,7 +17,7 @@
 # under the License.
 # Configurations
 
-service: LabelBot
+service: LabelBotFull
 
 plugins:
   - serverless-domain-manager
