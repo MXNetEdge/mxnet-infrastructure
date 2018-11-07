@@ -17,7 +17,7 @@
 # under the License.
 # Configurations
 
-service: LabelBot
+service: LabelBotFull
 
 plugins:
   - serverless-domain-manager
@@ -25,8 +25,8 @@ plugins:
 custom:
   queueName: LabelSQS
   customDomain:
-    domainName: 'deploy.mxnet-label-bot.de'
-    basePath: '/dev'
+    domainName: 'labelbot-webhook.mxnet-ci-dev.amazon-ml.com'
+    basePath: 'dev'
     stage: dev
     createRoute53Record: true
 
@@ -56,6 +56,9 @@ provider:
     -  Effect: "Allow"
        Action:
          - "sqs:SendMessage"
+         - "sqs:ReceiveMessage"
+         - "sqs:DeleteMessage"
+         - "sqs:GetQueueAttributes"
        Resource:
          Fn::GetAtt: [ SQSQueue, Arn ]
 
