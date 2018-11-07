@@ -3,4 +3,4 @@
 set -e
 
 export AWS_PROFILE=mxnet-ci-dev
-sls deploy
+sls deploy -v

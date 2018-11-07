@@ -19,8 +19,16 @@
 
 service: LabelBot
 
+plugins:
+  - serverless-domain-manager
+
 custom:
   queueName: LabelSQS
+  customDomain:
+    domainName: 'deploy.mxnet-label-bot.de'
+    basePath: '/dev'
+    stage: dev
+    createRoute53Record: true
 
 package:
   exclude:
