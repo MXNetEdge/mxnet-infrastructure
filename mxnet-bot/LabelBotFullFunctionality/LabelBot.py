@@ -75,7 +75,7 @@ class LabelBot:
         :return Set of Labels which have been extracted
         """
         substring = string[string.find('[') + 1: string.rfind(']')]
-        labels = [' '.join(label.split()) for label in substring.split(',')]
+        labels = [' '.join(label.split()).lower() for label in substring.split(',')]
         return labels
 
     def _ascii_only(self, raw_string, sub_string):
