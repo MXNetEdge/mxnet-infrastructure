@@ -32,8 +32,15 @@ def send_to_sqs(event, context):
         MessageBody=str(event)
         ))
 
+    logging.info('Response: {}'.format(response))
+    status = response['ResponseMetadata']['HTTPStatusCode']
+    if status == 200:
+        logging.info('Enqueued to SQS')
+    else:
+        logging.error('Unable to enqueue to SQS')
+
     return {
-        "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+        "statusCode": status,
         "headers": {"Content-Type": "application/json"}
     }
 
@@ -44,7 +51,10 @@ def label_bot_lambda(event, context):
     remaining = label_bot._get_rate_limit()
 
     if remaining >= 4000:
-        label_bot.parse_webhook_data(event)
+        try:
+            label_bot.parse_webhook_data(event)
+        except:
+            logging.error("Label bot raised an exception!")
         remaining = label_bot._get_rate_limit()
         logging.info("Lambda is triggered successfully! (remaining HTTP request: {})".format(remaining))
     else:

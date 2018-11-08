@@ -76,3 +76,4 @@ As well, make sure to set the appropriate CNAME certificate from Certificate Man
 
 When wanting to update the stack using serverless deploy after initial launch, comment out
 in serverless.yml file the section regarding customDomain and plugins.
+***Note:*** Confirm in each update that the basePath is set to /dev and point it to corret lambda under Custom Domain Names in API Gateway.
