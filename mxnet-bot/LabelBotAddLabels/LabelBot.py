@@ -57,7 +57,7 @@ class LabelBot:
         This method is to extract labels from comments
         """
         substring = string[string.find('[')+1: string.rfind(']')] 
-        labels = [' '.join(label.split()) for label in substring.split(',')]
+        labels = [' '.join(label.split()).lower() for label in substring.split(',')]
         return labels
 
     def clean_string(self, raw_string, sub_string):
