@@ -253,6 +253,7 @@ class LabelBot:
             if "@mxnet-label-bot" in payload["comment"]["body"]:
                 labels += self._tokenize(payload["comment"]["body"])
                 if not labels:
+                    logging.error("Message typed by user: {}".format(payload["comment"]["body"]))
                     raise Exception("Unable to gather labels from issue comments")
 
                 self._find_all_labels()
@@ -260,14 +261,17 @@ class LabelBot:
                     raise Exception("Unable to gather labels from the repo")
 
                 if not set(labels).intersection(set(self.all_labels)):
+                    logging.error('Labels entered by user: {}'.format(str(set(labels))))
+                    logging.error('Repo labels: {}'.format(str(set(self.all_labels))))
                     raise Exception("Provided labels don't match labels from the repo")
 
                 action = payload["comment"]["body"].split(" ")[1]
                 issue_num = payload["issue"]["number"]
                 actions[action] = issue_num, labels
                 if not self.label_action(actions):
+                    logging.error('Unsupported actions: {}'.format(str(actions)))
                     raise Exception("Unrecognized/Infeasible label action for the mxnet-label-bot")
 
         else:
-            logging.error("GitHub Event unsupported by Label Bot")
+            logging.info('GitHub Event unsupported by Label Bot: {} {}'.format(github_event, payload["action"]))
 
