@@ -23,11 +23,12 @@ import os
 import logging
 logging.basicConfig(level=logging.INFO)
 
+
 def get_secret():
-    '''
+    """
     This method is to fetch secret values
     Please configure secret_name and region_name as environment variables
-    '''
+    """
     secret_name = os.environ.get("secret_name")
     region_name = os.environ.get("region_name")
     endpoint_url = "https://secretsmanager.{}.amazonaws.com".format(region_name)
