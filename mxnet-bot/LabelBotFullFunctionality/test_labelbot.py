@@ -52,6 +52,27 @@ class TestLabelBot(unittest.TestCase):
             self.lb.all_labels = ['sample_label', 'another_label', 'all_labels']
             self.assertTrue(self.lb.update_labels(issue_num=0, labels=['sample_label']))
 
+    # Tests for different types of labels
+    def test_tokenize(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[Sample Label]")
+        self.assertEqual(user_label, ['sample label'])
+
+    def test_tokenize2(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[sAMpLe LAbEl, another Label, fInal]")
+        self.assertEqual(user_label, ['sample label', 'another label', 'final'])
+
+    def test_tokenize3(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[Sample Label, label2, label3]")
+        self.assertEqual(user_label, ['sample label', 'label2', 'label3'])
+
+    def test_tokenize4(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[Good first issue]")
+        self.assertEqual(user_label, ['good first issue'])
+
+    def test_tokenize5(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[MANY many wORds hERe are THere, hello GOODbye ok]")
+        self.assertEqual(user_label, ['many many words here are there', 'hello goodbye ok'])
+
 
 if __name__ == "__main__":
     unittest.main()
