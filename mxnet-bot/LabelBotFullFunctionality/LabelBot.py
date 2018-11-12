@@ -253,7 +253,7 @@ class LabelBot:
             if "@mxnet-label-bot" in payload["comment"]["body"]:
                 labels += self._tokenize(payload["comment"]["body"])
                 if not labels:
-                    logging.error("Message typed by user: {}".format(payload["comment"]["body"]))
+                    logging.error('Message typed by user: {}'.format(payload["comment"]["body"]))
                     raise Exception("Unable to gather labels from issue comments")
 
                 self._find_all_labels()
@@ -265,7 +265,8 @@ class LabelBot:
                     logging.error('Repo labels: {}'.format(str(set(self.all_labels))))
                     raise Exception("Provided labels don't match labels from the repo")
 
-                action = payload["comment"]["body"].split(" ")[1]
+                # Allows @mxnet-label-bot to be specified anywhere in the comment body and still be referenced
+                action = payload["comment"]["body"][payload["comment"]["body"].index("@mxnet-label-bot"):].split(" ")[1]
                 issue_num = payload["issue"]["number"]
                 actions[action] = issue_num, labels
                 if not self.label_action(actions):

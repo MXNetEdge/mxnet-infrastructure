@@ -73,6 +73,10 @@ class TestLabelBot(unittest.TestCase):
         user_label = LabelBot._tokenize(LabelBot.__class__, "[MANY many wORds hERe are THere, hello GOODbye ok]")
         self.assertEqual(user_label, ['many many words here are there', 'hello goodbye ok'])
 
+    def test_tokenize6(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[ ci ,           TeSt]")
+        self.assertEqual(user_label, ['ci', 'test'])
+
 
 if __name__ == "__main__":
     unittest.main()
