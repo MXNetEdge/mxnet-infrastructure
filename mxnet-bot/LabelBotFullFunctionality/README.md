@@ -59,7 +59,7 @@ One thing to mention: this IAM role only has ***Read*** access to the secret cre
 * Go to the lambda function's console, click **Test**. 
 * Then labels will be added.
     <div align="center">
-        <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-07-31+at+3.10.26+PM.png" width="600" height="150"><br>
+        <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-11-13+at+1.56.17+PM.png" width="600" height="150"><br>
     </div>
 
 #### 4. DNS Service
@@ -77,3 +77,15 @@ As well, make sure to set the appropriate CNAME certificate from Certificate Man
 When wanting to update the stack using serverless deploy after initial launch, comment out
 in serverless.yml file the section regarding customDomain and plugins.
 ***Note:*** Confirm in each update that the basePath is set to /dev and point it to corret lambda under Custom Domain Names in API Gateway.
+
+
+#### 5. CloudWatch Log Access
+* In (deploy.sh) fill in the variables 
+    - dest_account="AWS_ACCOUNT_NUM" with the AWS account of the destination of the logs
+    - bot_account="AWS_ACCOUNT_NUM" with the AWS account of the bot account
+* Then, the destination log account proceeds to assume the role (to have view access of the logs)
+    - [Assume Role](https://signin.aws.amazon.com/switchrole?roleName=LabelBotLogAccessRole&account=XXXXXXXXXXXX)
+* After assuming the role proceed to view the logs by navigating to the appropriate section in the CloudWatch console
+   - [Label Logs](https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logStream:group=/aws/lambda/LabelBot-dev-label)
+   - [Send Logs](https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logStream:group=/aws/lambda/LabelBot-dev-label)
+
