@@ -19,6 +19,7 @@ from botocore.vendored import requests
 from botocore.exceptions import ClientError
 from LabelBot import LabelBot
 import unittest
+import ast
 
 # some version issue
 try:
@@ -34,6 +35,7 @@ class TestLabelBot(unittest.TestCase):
     def setUp(self):
         self.lb = LabelBot(repo="harshp8l/mxnet-infrastructure",  apply_secret=True)
 
+    # Tests for basic functionality
     def test_add_labels(self):
         with patch('LabelBot.requests.post') as mocked_post:
             mocked_post.return_value.status_code = 200
@@ -52,30 +54,71 @@ class TestLabelBot(unittest.TestCase):
             self.lb.all_labels = ['sample_label', 'another_label', 'all_labels']
             self.assertTrue(self.lb.update_labels(issue_num=0, labels=['sample_label']))
 
-    # Tests for different types of labels
-    def test_tokenize(self):
-        user_label = LabelBot._tokenize(LabelBot.__class__, "[Sample Label]")
+    # Tests for different kinds of user input
+    # Tests for spaces
+    def test_tokenize_frontSpace(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[   Sample Label]")
         self.assertEqual(user_label, ['sample label'])
 
-    def test_tokenize2(self):
-        user_label = LabelBot._tokenize(LabelBot.__class__, "[sAMpLe LAbEl, another Label, fInal]")
+    def test_tokenize_endSpace(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[ Sample Label      ]")
+        self.assertEqual(user_label, ['sample label'])
+
+    def test_tokenize_midSpace(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[Sample        Label]")
+        self.assertEqual(user_label, ['sample label'])
+
+    def test_tokenize_manyWordsSpace(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[This    is    a     sample    label]")
+        self.assertEqual(user_label, ['this is a sample label'])
+
+    # Tests for case-insensitive
+    def test_tokenize_upperCase(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[SAMPLE LABEL, ANOTHER LABEL, FINAL]")
         self.assertEqual(user_label, ['sample label', 'another label', 'final'])
 
-    def test_tokenize3(self):
-        user_label = LabelBot._tokenize(LabelBot.__class__, "[Sample Label, label2, label3]")
-        self.assertEqual(user_label, ['sample label', 'label2', 'label3'])
+    def test_tokenize_mixCase(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[sAmPlE LaBeL, AnOtHeR lAbEl, fInAl]")
+        self.assertEqual(user_label, ['sample label', 'another label', 'final'])
 
-    def test_tokenize4(self):
-        user_label = LabelBot._tokenize(LabelBot.__class__, "[Good first issue]")
-        self.assertEqual(user_label, ['good first issue'])
+    def test_tokenize_lowerCase(self):
+        user_label = LabelBot._tokenize(LabelBot.__class__, "[sample label, another label, final]")
+        self.assertEqual(user_label, ['sample label', 'another label', 'final'])
 
-    def test_tokenize5(self):
-        user_label = LabelBot._tokenize(LabelBot.__class__, "[MANY many wORds hERe are THere, hello GOODbye ok]")
-        self.assertEqual(user_label, ['many many words here are there', 'hello goodbye ok'])
+    # Tests for parsing data from github comments
+    # Referencing @mxnet-label-bot from different places in the comment body
+    def test_parse_webhook_data_referencedAtEnd(self):
+        fh = open("testAtEnd.txt", "r")
+        token = ast.literal_eval(fh.read())
+        with patch.object(LabelBot, '_secure_webhook', return_value=True):
+            with patch.object(LabelBot, 'add_labels', return_value=True):
+                self.lb.parse_webhook_data(token)
+        fh.close()
 
-    def test_tokenize6(self):
-        user_label = LabelBot._tokenize(LabelBot.__class__, "[ ci ,           TeSt]")
-        self.assertEqual(user_label, ['ci', 'test'])
+    def test_parse_webhook_data_referencedAtStart(self):
+        fh = open("testAtStart.txt", "r")
+        token = ast.literal_eval(fh.read())
+        with patch.object(LabelBot, '_secure_webhook', return_value=True):
+            with patch.object(LabelBot, 'add_labels', return_value=True):
+                self.lb.parse_webhook_data(token)
+        fh.close()
+
+    def test_parse_webhook_data_referencedAtMid(self):
+        fh = open("testAtMid.txt", "r")
+        token = ast.literal_eval(fh.read())
+        with patch.object(LabelBot, '_secure_webhook', return_value=True):
+            with patch.object(LabelBot, 'add_labels', return_value=True):
+                print(self.lb.parse_webhook_data(token))
+        fh.close()
+
+    # Test if actions are triggered with different user inputs ( i.e. add[label] )
+    def test_parse_webhook_data_actionNoSpace(self):
+        fh = open("testNoSpace.txt", "r")
+        token = ast.literal_eval(fh.read())
+        with patch.object(LabelBot, '_secure_webhook', return_value=True):
+            with patch.object(LabelBot, 'add_labels', return_value=True):
+                print(self.lb.parse_webhook_data(token))
+        fh.close()
 
 
 if __name__ == "__main__":
