@@ -3,8 +3,8 @@
 set -e
 export AWS_PROFILE=mxnet-ci-dev
 
-dest_account="106780517423"
-bot_account="968277166688"
+dest_account=""
+bot_account=""
 
 sed "s/###HERE###/$dest_account/g" log-access-trust-policy.json-template > log-access-trust-policy.json
 sed "s/###HERE###/$bot_account/g" log-access-policy.json-template > log-access-policy.json
