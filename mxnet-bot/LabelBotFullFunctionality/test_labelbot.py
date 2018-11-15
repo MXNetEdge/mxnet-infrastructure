@@ -14,12 +14,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import boto3
-from botocore.vendored import requests
-from botocore.exceptions import ClientError
-from LabelBot import LabelBot
 import unittest
 import ast
+from LabelBot import LabelBot
 
 # some version issue
 try:
@@ -88,7 +85,7 @@ class TestLabelBot(unittest.TestCase):
     # Tests for parsing data from github comments
     # Referencing @mxnet-label-bot from different places in the comment body
     def test_parse_webhook_data_referencedAtEnd(self):
-        fh = open("testAtEnd.txt", "r")
+        fh = open("testAtEnd.json", "r")
         token = ast.literal_eval(fh.read())
         with patch.object(LabelBot, '_secure_webhook', return_value=True):
             with patch.object(LabelBot, 'add_labels', return_value=True):
@@ -96,7 +93,7 @@ class TestLabelBot(unittest.TestCase):
         fh.close()
 
     def test_parse_webhook_data_referencedAtStart(self):
-        fh = open("testAtStart.txt", "r")
+        fh = open("testAtStart.json", "r")
         token = ast.literal_eval(fh.read())
         with patch.object(LabelBot, '_secure_webhook', return_value=True):
             with patch.object(LabelBot, 'add_labels', return_value=True):
@@ -104,7 +101,7 @@ class TestLabelBot(unittest.TestCase):
         fh.close()
 
     def test_parse_webhook_data_referencedAtMid(self):
-        fh = open("testAtMid.txt", "r")
+        fh = open("testAtMid.json", "r")
         token = ast.literal_eval(fh.read())
         with patch.object(LabelBot, '_secure_webhook', return_value=True):
             with patch.object(LabelBot, 'add_labels', return_value=True):
@@ -113,7 +110,7 @@ class TestLabelBot(unittest.TestCase):
 
     # Test if actions are triggered with different user inputs ( i.e. add[label] )
     def test_parse_webhook_data_actionNoSpace(self):
-        fh = open("testNoSpace.txt", "r")
+        fh = open("testNoSpace.json", "r")
         token = ast.literal_eval(fh.read())
         with patch.object(LabelBot, '_secure_webhook', return_value=True):
             with patch.object(LabelBot, 'add_labels', return_value=True):
