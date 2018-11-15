@@ -85,7 +85,7 @@ class TestLabelBot(unittest.TestCase):
     # Tests for parsing data from github comments
     # Referencing @mxnet-label-bot from different places in the comment body
     def test_parse_webhook_data_referencedAtEnd(self):
-        fh = open("testAtEnd.json", "r")
+        fh = open("testInputFiles/testAtEnd.json", "r")
         token = ast.literal_eval(fh.read())
         with patch.object(LabelBot, '_secure_webhook', return_value=True):
             with patch.object(LabelBot, 'add_labels', return_value=True):
@@ -93,7 +93,7 @@ class TestLabelBot(unittest.TestCase):
         fh.close()
 
     def test_parse_webhook_data_referencedAtStart(self):
-        fh = open("testAtStart.json", "r")
+        fh = open("testInputFiles/testAtStart.json", "r")
         token = ast.literal_eval(fh.read())
         with patch.object(LabelBot, '_secure_webhook', return_value=True):
             with patch.object(LabelBot, 'add_labels', return_value=True):
@@ -101,7 +101,7 @@ class TestLabelBot(unittest.TestCase):
         fh.close()
 
     def test_parse_webhook_data_referencedAtMid(self):
-        fh = open("testAtMid.json", "r")
+        fh = open("testInputFiles/testAtMid.json", "r")
         token = ast.literal_eval(fh.read())
         with patch.object(LabelBot, '_secure_webhook', return_value=True):
             with patch.object(LabelBot, 'add_labels', return_value=True):
@@ -110,7 +110,7 @@ class TestLabelBot(unittest.TestCase):
 
     # Test if actions are triggered with different user inputs ( i.e. add[label] )
     def test_parse_webhook_data_actionNoSpace(self):
-        fh = open("testNoSpace.json", "r")
+        fh = open("testInputFiles/testNoSpace.json", "r")
         token = ast.literal_eval(fh.read())
         with patch.object(LabelBot, '_secure_webhook', return_value=True):
             with patch.object(LabelBot, 'add_labels', return_value=True):
