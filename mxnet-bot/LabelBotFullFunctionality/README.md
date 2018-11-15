@@ -84,7 +84,6 @@ in serverless.yml file the section regarding customDomain and plugins.
     - dest_account="AWS_ACCOUNT_NUM" with the AWS account of the destination of the logs
     - bot_account="AWS_ACCOUNT_NUM" with the AWS account of the bot account
 * Then, the destination log account proceeds to assume the role (to have view access of the logs)
-    - [Assume Role](https://signin.aws.amazon.com/switchrole?roleName=LabelBotLogAccessRole&account=XXXXXXXXXXXX)
 * After assuming the role proceed to view the logs by navigating to the appropriate section in the CloudWatch console
    - [Label Logs](https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logStream:group=/aws/lambda/LabelBot-dev-label)
    - [Send Logs](https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logStream:group=/aws/lambda/LabelBot-dev-label)
