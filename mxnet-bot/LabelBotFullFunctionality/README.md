@@ -1,11 +1,13 @@
 # label bot
 This bot serves to help non-committers add labels to GitHub issues.
 
-"Hi @mxnet-label-bot, please add labels: [operator, feature request]"
+"Hi @mxnet-label-bot, add [operator, feature request]"
 
-"Hi @mxnet-label-bot remove labels : [operator, feature request]"
+"Hi @mxnet-label-bot remove [operator, feature request]"
 
-"Hi @mxnet-label-bot update labels : [operator, feature request]"
+"Hi @mxnet-label-bot update [operator, feature request]"
+
+"Hi @mxnet-label-bot replace [operator, feature request]"
 
 ## Setup
 **Make sure that all settings is in the same *AWS region***
