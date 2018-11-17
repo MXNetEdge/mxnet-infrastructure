@@ -1,7 +1,7 @@
 # label bot
 This bot serves to help non-committers add labels to GitHub issues.
 
-"Hi @mxnet-label-bot, add [operator, feature request]"
+"Hi @mxnet-label-bot add [operator, feature request]"
 
 "Hi @mxnet-label-bot remove [operator, feature request]"
 
