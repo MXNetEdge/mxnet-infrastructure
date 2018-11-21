@@ -85,37 +85,33 @@ class TestLabelBot(unittest.TestCase):
     # Tests for parsing data from github comments
     # Referencing @mxnet-label-bot from different places in the comment body
     def test_parse_webhook_data_referencedAtEnd(self):
-        fh = open("testInputFiles/testAtEnd.json", "r")
-        token = ast.literal_eval(fh.read())
-        with patch.object(LabelBot, '_secure_webhook', return_value=True):
-            with patch.object(LabelBot, 'add_labels', return_value=True):
-                self.lb.parse_webhook_data(token)
-        fh.close()
+        with open("testInputFiles/testAtEnd.json", "r") as fh:
+            token = ast.literal_eval(fh.read())
+            with patch.object(LabelBot, '_secure_webhook', return_value=True):
+                with patch.object(LabelBot, 'add_labels', return_value=True):
+                    self.lb.parse_webhook_data(token)
 
     def test_parse_webhook_data_referencedAtStart(self):
-        fh = open("testInputFiles/testAtStart.json", "r")
-        token = ast.literal_eval(fh.read())
-        with patch.object(LabelBot, '_secure_webhook', return_value=True):
-            with patch.object(LabelBot, 'add_labels', return_value=True):
-                self.lb.parse_webhook_data(token)
-        fh.close()
+        with open("testInputFiles/testAtStart.json", "r") as fh:
+            token = ast.literal_eval(fh.read())
+            with patch.object(LabelBot, '_secure_webhook', return_value=True):
+                with patch.object(LabelBot, 'add_labels', return_value=True):
+                    self.lb.parse_webhook_data(token)
 
     def test_parse_webhook_data_referencedAtMid(self):
-        fh = open("testInputFiles/testAtMid.json", "r")
-        token = ast.literal_eval(fh.read())
-        with patch.object(LabelBot, '_secure_webhook', return_value=True):
-            with patch.object(LabelBot, 'add_labels', return_value=True):
-                print(self.lb.parse_webhook_data(token))
-        fh.close()
+        with open("testInputFiles/testAtMid.json", "r") as fh:
+            token = ast.literal_eval(fh.read())
+            with patch.object(LabelBot, '_secure_webhook', return_value=True):
+                with patch.object(LabelBot, 'add_labels', return_value=True):
+                    print(self.lb.parse_webhook_data(token))
 
     # Test if actions are triggered with different user inputs ( i.e. add[label] )
     def test_parse_webhook_data_actionNoSpace(self):
-        fh = open("testInputFiles/testNoSpace.json", "r")
-        token = ast.literal_eval(fh.read())
-        with patch.object(LabelBot, '_secure_webhook', return_value=True):
-            with patch.object(LabelBot, 'add_labels', return_value=True):
-                print(self.lb.parse_webhook_data(token))
-        fh.close()
+        with open("testInputFiles/testNoSpace.json", "r") as fh:
+            token = ast.literal_eval(fh.read())
+            with patch.object(LabelBot, '_secure_webhook', return_value=True):
+                with patch.object(LabelBot, 'add_labels', return_value=True):
+                    print(self.lb.parse_webhook_data(token))
 
 
 if __name__ == "__main__":
