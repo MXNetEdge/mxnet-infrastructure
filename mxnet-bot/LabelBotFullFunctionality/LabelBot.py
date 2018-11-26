@@ -140,7 +140,7 @@ class LabelBot:
 
         response = requests.post(issue_labels_url, json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
-            logging.info('Successfully added labels to {}: {}.'.format(str(issue_num), str(labels)))
+            logging.info(f'Successfully added labels to {issue_num}: {labels}.')
             return True
         else:
             logging.error('Could not add the labels to {}: {}. \nResponse: {}'
@@ -163,7 +163,7 @@ class LabelBot:
             delete_label_url = issue_labels_url + label
             response = requests.delete(delete_label_url, auth=self.auth)
             if response.status_code == 200:
-                logging.info('Successfully removed label to {}: {}.'.format(str(issue_num), str(label)))
+                logging.info(f'Successfully removed label to {issue_num}: {label}.')
             else:
                 logging.error('Could not remove the label to {}: {}. \nResponse: {}'
                               .format(str(issue_num), str(label), json.dumps(response.json())))
@@ -184,7 +184,7 @@ class LabelBot:
 
         response = requests.put(issue_labels_url, data=json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
-            logging.info('Successfully updated labels to {}: {}.'.format(str(issue_num), str(labels)))
+            logging.info(f'Successfully updated labels to {issue_num}: {labels}.')
             return True
         else:
             logging.error('Could not update the labels to {}: {}. \nResponse: {}'
@@ -278,7 +278,7 @@ class LabelBot:
                 issue_num = payload["issue"]["number"]
                 actions[action] = issue_num, labels
                 if not self.label_action(actions):
-                    logging.error('Unsupported actions: {}'.format(str(actions)))
+                    logging.error(f'Unsupported actions: {actions}')
                     raise Exception("Unrecognized/Infeasible label action for the mxnet-label-bot")
 
         else:
