@@ -93,7 +93,7 @@ class LabelBot:
         This method finds all existing labels in the repo
         :return A set of all labels which have been extracted from the repo
         """
-        url = 'https://api.github.com/repos/{}/{}'.format(self.repo, "labels")
+        url = f'https://api.github.com/repos/{self.repo}/labels'
         response = requests.get(url, auth=self.auth)
         response.raise_for_status()
 
@@ -135,9 +135,7 @@ class LabelBot:
         :return Response denoting success or failure for logging purposes
         """
         labels = self._format_labels(labels)
-        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
-            .format(repo=self.repo, id=issue_num)
-
+        issue_labels_url = f'https://api.github.com/repos/{self.repo}/issues/{issue_num}/labels'
         response = requests.post(issue_labels_url, json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
             logging.info(f'Successfully added labels to {issue_num}: {labels}.')
@@ -156,8 +154,7 @@ class LabelBot:
         :return Response denoting success or failure for logging purposes
         """
         labels = self._format_labels(labels)
-        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels/' \
-            .format(repo=self.repo, id=issue_num)
+        issue_labels_url = f'https://api.github.com/repos/{self.repo}/issues/{issue_num}/labels/'
 
         for label in labels:
             delete_label_url = issue_labels_url + label
@@ -179,8 +176,7 @@ class LabelBot:
         :return Response denoting success or failure for logging purposes
         """
         labels = self._format_labels(labels)
-        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
-            .format(repo=self.repo, id=issue_num)
+        issue_labels_url = f'https://api.github.com/repos/{self.repo}/issues/{issue_num}/labels'
 
         response = requests.put(issue_labels_url, data=json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
@@ -257,7 +253,7 @@ class LabelBot:
 
                 labels += self._tokenize(phrase)
                 if not labels:
-                    logging.error('Message typed by user: {}'.format(phrase))
+                    logging.error(f'Message typed by user: {phrase}')
                     raise Exception("Unable to gather labels from issue comments")
 
                 self._find_all_labels()
