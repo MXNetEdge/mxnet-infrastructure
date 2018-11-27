@@ -53,7 +53,7 @@ class LabelBot:
         This method gets the remaining rate limit that is left from the GitHub API
         :return Remaining API requests left that GitHub will allow
         """
-        res = requests.get('https://api.github.com/{}'.format('rate_limit'),
+        res = requests.get('https://api.github.com/rate_limit',
                            auth=self.auth)
         res.raise_for_status()
         data = res.json()['rate']
