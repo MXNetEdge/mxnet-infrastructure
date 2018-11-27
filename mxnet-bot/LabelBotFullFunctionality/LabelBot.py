@@ -106,7 +106,7 @@ class LabelBot:
         all_labels = []
         for page in range(1, pages + 1):
             url = 'https://api.github.com/repos/' + self.repo + '/labels?page=' + str(page) \
-                  + '&per_page={}'.format(self.LABEL_PAGE_PARSE, repo=self.repo)
+                  + '&per_page=%s' % self.LABEL_PAGE_PARSE
             response = requests.get(url, auth=self.auth)
             for item in response.json():
                 all_labels.append(item['name'].lower())
@@ -141,8 +141,8 @@ class LabelBot:
             logging.info(f'Successfully added labels to {issue_num}: {labels}.')
             return True
         else:
-            logging.error('Could not add the labels to {}: {}. \nResponse: {}'
-                          .format(str(issue_num), str(labels), json.dumps(response.json())))
+            logging.error('Could not add the labels to %s: %s. \nResponse: %s' %
+                          (issue_num, labels, json.dumps(response.json())))
             return False
 
     def remove_labels(self, issue_num, labels):
@@ -162,8 +162,8 @@ class LabelBot:
             if response.status_code == 200:
                 logging.info(f'Successfully removed label to {issue_num}: {label}.')
             else:
-                logging.error('Could not remove the label to {}: {}. \nResponse: {}'
-                              .format(str(issue_num), str(label), json.dumps(response.json())))
+                logging.error('Could not remove the label to %s: %s. \nResponse: %s' %
+                              (issue_num, label, json.dumps(response.json())))
                 return False
         return True
 
@@ -183,8 +183,8 @@ class LabelBot:
             logging.info(f'Successfully updated labels to {issue_num}: {labels}.')
             return True
         else:
-            logging.error('Could not update the labels to {}: {}. \nResponse: {}'
-                          .format(str(issue_num), str(labels), json.dumps(response.json())))
+            logging.error('Could not update the labels to %s: %s. \nResponse: %s' %
+                          (issue_num, labels, json.dumps(response.json())))
             return False
 
     def label_action(self, actions):
@@ -261,8 +261,8 @@ class LabelBot:
                     raise Exception("Unable to gather labels from the repo")
 
                 if not set(labels).intersection(set(self.all_labels)):
-                    logging.error('Labels entered by user: {}'.format(str(set(labels))))
-                    logging.error('Repo labels: {}'.format(str(set(self.all_labels))))
+                    logging.error('Labels entered by user: %s' % (str(set(labels))))
+                    logging.error('Repo labels: %s' % (str(set(self.all_labels))))
                     raise Exception("Provided labels don't match labels from the repo")
 
                 # Case so that ( add[label1] ) and ( add [label1] ) are treated the same way
@@ -278,5 +278,5 @@ class LabelBot:
                     raise Exception("Unrecognized/Infeasible label action for the mxnet-label-bot")
 
         else:
-            logging.info('GitHub Event unsupported by Label Bot: {} {}'.format(github_event, payload["action"]))
+            logging.info('GitHub Event unsupported by Label Bot: %s %s' % (github_event, payload["action"]))
 
