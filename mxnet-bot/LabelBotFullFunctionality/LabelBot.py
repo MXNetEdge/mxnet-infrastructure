@@ -204,6 +204,12 @@ class LabelBot:
             return False
 
     def _secure_webhook(self, event):
+        """
+        This method will validate the security of the webhook, it confirms that the secret
+        of the webhook is matched and that each github event is signed appropriately
+        :param event: The github event we want to validate
+        :return Response denoting success or failure of security
+        """
 
         # Validating github event is signed
         try:
