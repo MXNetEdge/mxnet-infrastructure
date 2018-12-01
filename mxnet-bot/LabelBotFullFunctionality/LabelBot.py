@@ -189,7 +189,56 @@ class LabelBot:
         else:
             logging.error('Could not update the labels to {}: {}. \nResponse: {}'
                           .format(str(issue_num), str(labels), json.dumps(response.json())))
+        return False
+
+    def add_recommendation(self, issue_num):
+
+        recommendation_url = ''
+        predict_issue = {"issues": [issue_num]}
+        header = {"Content-Type": 'application/json'}
+        response = requests.post(recommendation_url, data=json.dumps(predict_issue), headers=header)
+        predicted_labels = response.json()[0]["predictions"]
+
+        if response.status_code == 200:
+            logging.info('Successfully predicted labels to {}: {}.'.format(str(issue_num), str(predicted_labels)))
+        else:
+            logging.error("Unable to predict labels")
+            return "Failed to predict labels"
+
+        if 'Question' in predicted_labels:
+            message = "Hey, this is the MXNet Label Bot and I think you have raised a question. \n" \
+                      "For questions, you can also submit on MXNet discussion forum (https://discuss.mxnet.io), " \
+                      "where it will get a wider audience and allow others to learn as well. Thanks! \n\n " \
+                      "If this is a question, you can comment the following to add the appropriate label to this " \
+                      "issue: `@mxnet-label-bot add [question]` "
+        else:
+            message = "Hey, this is the MXNet Label Bot. \n Thank you for submitting the issue! I will suggest " \
+                      "some labels for it so that the appropriate MXNet community members can help resolve it. \n\n " \
+                      "The suggested labels are: " + str(predicted_labels) + "\nYou can comment the following to " \
+                      "add labels to this issue: `@mxnet-label-bot add " + str(predicted_labels).replace("'", "") + "`"
+
+        self.create_comment(issue_num, message)
+        return "Predicted labels successfully"
+
+    def create_comment(self, issue_num, message):
+        """
+        This method will trigger a comment to an issue by the label bot
+        :param issue_num: The issue we want to comment
+        :param message: The comment message we want to send
+        :return Response denoting success or failure for logging purposes
+        """
+        send_msg = {"body": message}
+        issue_comments_url = 'https://api.github.com/repos/{repo}/issues/{id}/comments' \
+            .format(repo=self.repo, id=issue_num)
+
+        response = requests.post(issue_comments_url, data=json.dumps(send_msg), auth=self.my_auth)
+        if response.status_code == 201:
+            logging.info('Successfully commented {} to: {}'.format(send_msg, issue_num))
+            return True
+        else:
+            logging.error("Could not comment \n".format(json.dumps(response.json())))
             return False
+
 
     def label_action(self, actions):
         """
@@ -271,6 +320,10 @@ class LabelBot:
                 if not self.label_action(actions):
                     logging.error('Unsupported actions: {}'.format(str(actions)))
                     raise Exception("Unrecognized/Infeasible label action for the mxnet-label-bot")
+
+        # On creation of a new issue, automatically trigger the bot to recommend labels
+        if github_event == "issues" and payload["action"] == "opened":
+            return self.add_recommendation(payload["issue"]["number"])
 
         else:
             logging.info('GitHub Event unsupported by Label Bot: {} {}'.format(github_event, payload["action"]))
