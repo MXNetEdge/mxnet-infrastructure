@@ -253,9 +253,10 @@ class LabelBot:
             labels = []
             actions = {}
 
-            # Looks for and reads phrase referencing @mxnet-label-bot
+            # Looks for and reads phrase referencing @mxnet-label-bot, and trims extra whitespace to single space
             if "@mxnet-label-bot" in payload["comment"]["body"]:
-                phrase = payload["comment"]["body"][payload["comment"]["body"].index("@mxnet-label-bot"):]
+                phrase = payload["comment"]["body"][payload["comment"]["body"].find("@mxnet-label-bot"):payload["comment"]["body"].find("]")+1]
+                phrase = ' '.join(phrase.split())
 
                 labels += self._tokenize(phrase)
                 if not labels:
