@@ -187,6 +187,23 @@ class LabelBot:
                           f'\nResponse: {json.dumps(response.json())}')
             return False
 
+    def replace_label(self, issue_num, labels):
+        """
+        This method is to change a label to another in an issue
+        :param issue_num: The specific issue number we want to label
+        :param labels: The labels which we want to change from and to
+        :return: Response denoting success or failure for logging purposes
+        """
+        labels = self._format_labels(labels)
+        if len(labels) != 2:
+            logging.error('Must only specify 2 labels when wanting to change labels')
+            return False
+        logging.info('Label on {} to change from: {} to {}'.format(str(issue_num), str(labels[0]), str(labels[1])))
+        if self.remove_labels(issue_num, [labels[0]]) and self.add_labels(issue_num, [labels[1]]):
+            return True
+        else:
+            return False
+
     def label_action(self, actions):
         """
         This method will perform an actions for the labels that are provided. This function delegates
@@ -200,6 +217,8 @@ class LabelBot:
             return self.remove_labels(actions["remove"][0], actions["remove"][1])
         elif "update" in actions:
             return self.update_labels(actions["update"][0], actions["update"][1])
+        elif "replace" in actions:
+            return self.replace_label(actions["replace"][0], actions["replace"][1])
         else:
             return False
 
