@@ -212,9 +212,7 @@ class LabelBot:
         if self.remove_labels(issue_num, [labels[0]]) and self.add_labels(issue_num, [labels[1]]):
             return True
         else:
-            logging.error('Could not update the labels to {}: {}. \nResponse: {}'
-                          .format(str(issue_num), str(labels), json.dumps(response.json())))
-        return False
+            return False
 
     def predict_label(self, issue_num):
 
