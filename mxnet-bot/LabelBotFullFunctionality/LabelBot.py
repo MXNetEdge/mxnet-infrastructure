@@ -60,7 +60,7 @@ class LabelBot:
         This method gets the remaining rate limit that is left from the GitHub API
         :return Remaining API requests left that GitHub will allow
         """
-        res = requests.get('https://api.github.com/{}'.format('rate_limit'),
+        res = requests.get('https://api.github.com/rate_limit',
                            auth=self.auth)
         res.raise_for_status()
         data = res.json()['rate']
@@ -103,7 +103,7 @@ class LabelBot:
         This method finds all existing labels in the repo
         :return A set of all labels which have been extracted from the repo
         """
-        url = 'https://api.github.com/repos/{}/{}'.format(self.repo, "labels")
+        url = f'https://api.github.com/repos/{self.repo}/labels'
         response = requests.get(url, auth=self.auth)
         response.raise_for_status()
 
@@ -116,7 +116,7 @@ class LabelBot:
         all_labels = []
         for page in range(1, pages + 1):
             url = 'https://api.github.com/repos/' + self.repo + '/labels?page=' + str(page) \
-                  + '&per_page={}'.format(self.LABEL_PAGE_PARSE, repo=self.repo)
+                  + '&per_page=%s' % self.LABEL_PAGE_PARSE
             response = requests.get(url, auth=self.auth)
             for item in response.json():
                 all_labels.append(item['name'].lower())
@@ -145,16 +145,14 @@ class LabelBot:
         :return Response denoting success or failure for logging purposes
         """
         labels = self._format_labels(labels)
-        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
-            .format(repo=self.repo, id=issue_num)
-
+        issue_labels_url = f'https://api.github.com/repos/{self.repo}/issues/{issue_num}/labels'
         response = requests.post(issue_labels_url, json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
-            logging.info('Successfully added labels to {}: {}.'.format(str(issue_num), str(labels)))
+            logging.info(f'Successfully added labels to {issue_num}: {labels}.')
             return True
         else:
-            logging.error('Could not add the labels to {}: {}. \nResponse: {}'
-                          .format(str(issue_num), str(labels), json.dumps(response.json())))
+            logging.error(f'Could not add the labels to {issue_num}: {labels}. '
+                          f'\nResponse: {json.dumps(response.json())}')
             return False
 
     def remove_labels(self, issue_num, labels):
@@ -166,17 +164,16 @@ class LabelBot:
         :return Response denoting success or failure for logging purposes
         """
         labels = self._format_labels(labels)
-        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels/' \
-            .format(repo=self.repo, id=issue_num)
+        issue_labels_url = f'https://api.github.com/repos/{self.repo}/issues/{issue_num}/labels/'
 
         for label in labels:
             delete_label_url = issue_labels_url + label
             response = requests.delete(delete_label_url, auth=self.auth)
             if response.status_code == 200:
-                logging.info('Successfully removed label to {}: {}.'.format(str(issue_num), str(label)))
+                logging.info(f'Successfully removed label to {issue_num}: {label}.')
             else:
-                logging.error('Could not remove the label to {}: {}. \nResponse: {}'
-                              .format(str(issue_num), str(label), json.dumps(response.json())))
+                logging.error(f'Could not remove the label to {issue_num}: {label}. '
+                              f'\nResponse: {json.dumps(response.json())}')
                 return False
         return True
 
@@ -189,12 +186,30 @@ class LabelBot:
         :return Response denoting success or failure for logging purposes
         """
         labels = self._format_labels(labels)
-        issue_labels_url = 'https://api.github.com/repos/{repo}/issues/{id}/labels' \
-            .format(repo=self.repo, id=issue_num)
+        issue_labels_url = f'https://api.github.com/repos/{self.repo}/issues/{issue_num}/labels'
 
         response = requests.put(issue_labels_url, data=json.dumps(labels), auth=self.auth)
         if response.status_code == 200:
-            logging.info('Successfully updated labels to {}: {}.'.format(str(issue_num), str(labels)))
+            logging.info(f'Successfully updated labels to {issue_num}: {labels}.')
+            return True
+        else:
+            logging.error(f'Could not update the labels to {issue_num}: {labels}. '
+                          f'\nResponse: {json.dumps(response.json())}')
+            return False
+
+    def replace_label(self, issue_num, labels):
+        """
+        This method is to change a label to another in an issue
+        :param issue_num: The specific issue number we want to label
+        :param labels: The labels which we want to change from and to
+        :return: Response denoting success or failure for logging purposes
+        """
+        labels = self._format_labels(labels)
+        if len(labels) != 2:
+            logging.error('Must only specify 2 labels when wanting to change labels')
+            return False
+        logging.info('Label on {} to change from: {} to {}'.format(str(issue_num), str(labels[0]), str(labels[1])))
+        if self.remove_labels(issue_num, [labels[0]]) and self.add_labels(issue_num, [labels[1]]):
             return True
         else:
             logging.error('Could not update the labels to {}: {}. \nResponse: {}'
@@ -259,10 +274,18 @@ def create_comment(self, issue_num, message):
             return self.remove_labels(actions["remove"][0], actions["remove"][1])
         elif "update" in actions:
             return self.update_labels(actions["update"][0], actions["update"][1])
+        elif "replace" in actions:
+            return self.replace_label(actions["replace"][0], actions["replace"][1])
         else:
             return False
 
     def _secure_webhook(self, event):
+        """
+        This method will validate the security of the webhook, it confirms that the secret
+        of the webhook is matched and that each github event is signed appropriately
+        :param event: The github event we want to validate
+        :return Response denoting success or failure of security
+        """
 
         # Validating github event is signed
         try:
@@ -305,10 +328,15 @@ def create_comment(self, issue_num, message):
             # Acquiring labels specific to this repo
             labels = []
             actions = {}
+
+            # Looks for and reads phrase referencing @mxnet-label-bot, and trims extra whitespace to single space
             if "@mxnet-label-bot" in payload["comment"]["body"]:
-                labels += self._tokenize(payload["comment"]["body"])
+                phrase = payload["comment"]["body"][payload["comment"]["body"].find("@mxnet-label-bot"):payload["comment"]["body"].find("]")+1]
+                phrase = ' '.join(phrase.split())
+
+                labels += self._tokenize(phrase)
                 if not labels:
-                    logging.error("Message typed by user: {}".format(payload["comment"]["body"]))
+                    logging.error(f'Message typed by user: {phrase}')
                     raise Exception("Unable to gather labels from issue comments")
 
                 self._find_all_labels()
@@ -316,15 +344,20 @@ def create_comment(self, issue_num, message):
                     raise Exception("Unable to gather labels from the repo")
 
                 if not set(labels).intersection(set(self.all_labels)):
-                    logging.error('Labels entered by user: {}'.format(str(set(labels))))
-                    logging.error('Repo labels: {}'.format(str(set(self.all_labels))))
+                    logging.error(f'Labels entered by user: {set(labels)}')
+                    logging.error(f'Repo labels: {set(self.all_labels)}')
                     raise Exception("Provided labels don't match labels from the repo")
 
-                action = payload["comment"]["body"].split(" ")[1]
+                # Case so that ( add[label1] ) and ( add [label1] ) are treated the same way
+                if phrase.split(" ")[1].find('[') != -1:
+                    action = phrase.split(" ")[1][:phrase.split(" ")[1].find('[')].lower()
+                else:
+                    action = phrase.split(" ")[1].lower()
+
                 issue_num = payload["issue"]["number"]
                 actions[action] = issue_num, labels
                 if not self.label_action(actions):
-                    logging.error('Unsupported actions: {}'.format(str(actions)))
+                    logging.error(f'Unsupported actions: {actions}')
                     raise Exception("Unrecognized/Infeasible label action for the mxnet-label-bot")
 
         # On creation of a new issue, automatically trigger the bot to recommend labels
@@ -333,5 +366,5 @@ def create_comment(self, issue_num, message):
             return self.predict_label(payload["issue"]["number"])
 
         else:
-            logging.info('GitHub Event unsupported by Label Bot: {} {}'.format(github_event, payload["action"]))
+            logging.info(f'GitHub Event unsupported by Label Bot: {github_event} {payload["action"]}')
 
