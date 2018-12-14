@@ -241,7 +241,7 @@ class LabelBot:
         self.create_comment(issue_num, message)
         return True
 
-def create_comment(self, issue_num, message):
+    def create_comment(self, issue_num, message):
         """
         This method will trigger a comment to an issue by the label bot
         :param issue_num: The issue we want to comment
