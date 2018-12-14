@@ -234,8 +234,8 @@ class LabelBot:
             self.add_github_labels(issue_num, ['question'])
 
         else:
-            message = "Hey, this is the MXNet Label Bot. \n Thank you for submitting the issue! I will suggest " \
-                      "some labels if I am confident so that the appropriate MXNet community members can help " \
+            message = "Hey, this is the MXNet Label Bot. \n Thank you for submitting the issue! I will try and " \
+                      "suggest some labels so that the appropriate MXNet community members can help " \
                       "resolve it. \n "
 
         self.create_comment(issue_num, message)
