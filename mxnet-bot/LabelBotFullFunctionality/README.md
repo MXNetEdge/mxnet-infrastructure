@@ -26,7 +26,7 @@ This bot serves to help non-committers add labels to GitHub issues.
 
 * Run `terraform apply`. It will create the secret. Once setup, it will output the secret ARN. Write it down. 
  <div align="center">
-        <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-08-02+at+9.42.56+PM.png" ><br>
+        <img src="https://s3-us-west-2.amazonaws.com/label-bot-images/Screen+Shot+2018-08-02+at+9.42.56+PM.png" ><br>
  </div>
 
 
@@ -61,7 +61,7 @@ One thing to mention: this IAM role only has ***Read*** access to the secret cre
 * Go to the lambda function's console, click **Test**. 
 * Then labels will be added.
     <div align="center">
-        <img src="https://s3-us-west-2.amazonaws.com/email-boy-images/Screen+Shot+2018-11-13+at+1.56.17+PM.png" width="600" height="150"><br>
+        <img src="https://s3-us-west-2.amazonaws.com/label-bot-images/Screen+Shot+2018-11-13+at+1.56.17+PM.png" width="600" height="150"><br>
     </div>
 
 #### 4. DNS Service
