@@ -32,6 +32,9 @@ class LabelBot:
                  repo=os.environ.get("repo"),
                  github_user=None,
                  github_oauth_token=None,
+                 bot_user=None,
+                 bot_oauth_token=None,
+                 prediction_url=None,
                  apply_secret=True):
         """
         Initializes the Label Bot
@@ -43,9 +46,13 @@ class LabelBot:
         self.repo = repo
         self.github_user = github_user
         self.github_oauth_token = github_oauth_token
+        self.bot_user = bot_user
+        self.bot_oauth_token = bot_oauth_token
+        self.prediction_url = prediction_url
         if apply_secret:
             self._get_secret()
         self.auth = (self.github_user, self.github_oauth_token)
+        self.bot_auth = (self.bot_user, self.bot_oauth_token)
         self.all_labels = None
 
     def _get_rate_limit(self):
@@ -67,6 +74,9 @@ class LabelBot:
         self.github_user = secret["github_user"]
         self.github_oauth_token = secret["github_oauth_token"]
         self.webhook_secret = secret["webhook_secret"]
+        self.bot_user = secret["bot_user"]
+        self.bot_oauth_token = secret["bot_oauth_token"]
+        self.prediction_url = secret["prediction_url"]
 
     def _tokenize(self, string):
         """
@@ -204,6 +214,51 @@ class LabelBot:
         else:
             return False
 
+    def predict_label(self, issue_num):
+
+        predict_issue = {"issues": [issue_num]}
+        header = {"Content-Type": 'application/json'}
+        response = requests.post(self.prediction_url, data=json.dumps(predict_issue), headers=header)
+        predicted_labels = response.json()[0]["predictions"]
+
+        if response.status_code == 200:
+            logging.info(f'Successfully predicted labels to {issue_num}: {predicted_labels}')
+        else:
+            logging.error("Unable to predict labels")
+            return False
+
+        if 'Question' in predicted_labels:
+            message = "Hey, this is the MXNet Label Bot and I think you have raised a question. \n" \
+                      "For questions, you can also submit on MXNet discussion forum (https://discuss.mxnet.io), " \
+                      "where it will get a wider audience and allow others to learn as well. Thanks! \n "
+            self.add_github_labels(issue_num, ['question'])
+
+        else:
+            message = "Hey, this is the MXNet Label Bot. \n Thank you for submitting the issue! I will try and " \
+                      "suggest some labels so that the appropriate MXNet community members can help " \
+                      "resolve it. \n "
+
+        self.create_comment(issue_num, message)
+        return True
+
+def create_comment(self, issue_num, message):
+        """
+        This method will trigger a comment to an issue by the label bot
+        :param issue_num: The issue we want to comment
+        :param message: The comment message we want to send
+        :return Response denoting success or failure for logging purposes
+        """
+        send_msg = {"body": message}
+        issue_comments_url = f'https://api.github.com/repos/{self.repo}/issues/{issue_num}/comments'
+
+        response = requests.post(issue_comments_url, data=json.dumps(send_msg), auth=self.bot_auth)
+        if response.status_code == 201:
+            logging.info(f'Successfully commented {send_msg} to: {issue_num}')
+            return True
+        else:
+            logging.error(f'Could not comment \n {json.dumps(response.json())}')
+            return False
+
     def label_action(self, actions):
         """
         This method will perform an actions for the labels that are provided. This function delegates
@@ -302,6 +357,11 @@ class LabelBot:
                 if not self.label_action(actions):
                     logging.error(f'Unsupported actions: {actions}')
                     raise Exception("Unrecognized/Infeasible label action for the mxnet-label-bot")
+
+        # On creation of a new issue, automatically trigger the bot to recommend labels
+        if github_event == "issues" and payload["action"] == "opened":
+            self._find_all_labels()
+            return self.predict_label(payload["issue"]["number"])
 
         else:
             logging.info(f'GitHub Event unsupported by Label Bot: {github_event} {payload["action"]}')
