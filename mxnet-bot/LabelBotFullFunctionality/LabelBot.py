@@ -237,7 +237,7 @@ class LabelBot:
             message = "Hey, this is the MXNet Label Bot. \n Thank you for submitting the issue! I will try and " \
                       "suggest some labels so that the appropriate MXNet community members can help " \
                       "resolve it. \n "
-
+        message += 'Here are my recommended labels: {}'.format(', '.join(predicted_labels))
         self.create_comment(issue_num, message)
         return True
 
