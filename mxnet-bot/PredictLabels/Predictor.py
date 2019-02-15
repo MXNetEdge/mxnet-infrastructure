@@ -83,7 +83,7 @@ class Predictor:
             # apply rule-based algorithms
             single_issue_predictions = []
             if "feature request" in row.lower():
-                single_issue_predictions.append("Feature")
+                single_issue_predictions.append("Feature request")
             if "c++" in row.lower():
                 single_issue_predictions.append("C++")
             tokens = self.tokenize(row)
