@@ -47,6 +47,7 @@ functions:
       region_name: ${self:provider.environment.SECRET_ENDPOINT_REGION}
       secret_name: ${self:provider.environment.SECRET_NAME}
       repo: ${self:provider.environment.REPO_NAME}
+      jenkins_url: ${self:provider.environment.JENKINS_URL}
 
 resources:
   Resources:

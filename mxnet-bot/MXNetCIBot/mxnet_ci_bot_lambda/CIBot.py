@@ -22,10 +22,11 @@ import logging
 import secret_manager
 import hmac
 import hashlib
-from jenkinsapi.jenkins import Jenkins
-
 import requests
+
+from jenkinsapi.jenkins import Jenkins
 from github import Github
+
 
 class CIBot:
     def __init__(self,
@@ -34,6 +35,9 @@ class CIBot:
                  github_personal_access_token=None,
                 #  bot_user=None,
                 #  bot_oauth_token=None,
+                 jenkins_url=os.environ.get("jenkins_url"),
+                 jenkins_username=None,
+                 jenkins_password=None,
                  apply_secret=True):
         """
         Initializes the CI Bot
@@ -47,15 +51,15 @@ class CIBot:
         self.github_personal_access_token = github_personal_access_token
         # self.bot_user = bot_user
         # self.bot_oauth_token = bot_oauth_token
+        self.jenkins_username = jenkins_username
+        self.jenkins_password = jenkins_password
         if apply_secret:
             self._get_secret()
         self.auth = (self.github_user, self.github_personal_access_token)
         # self.bot_auth = (self.bot_user, self.bot_oauth_token)
         self.bot_auth = (self.github_user, self.github_personal_access_token)
         self.all_jobs = None
-        self.jenkins_url = "http://jenkins.mxnet-ci-dev.amazon-ml.com/"
-        self.jenkins_username = "ChaiBapchya"
-        self.jenkins_password = "113b7958db9a24e95ff52705e096e4bec0"
+        self.jenkins_url = jenkins_url
 
     def _get_secret(self):
         """
@@ -66,7 +70,9 @@ class CIBot:
         self.github_personal_access_token = secret["github_personal_access_token"]
         self.webhook_secret = secret["webhook_secret"]
         # self.bot_user = secret["bot_user"]
-        # self.bot_oauth_token = secret["bot_oauth_token"]        
+        # self.bot_oauth_token = secret["bot_oauth_token"]
+        self.jenkins_username = secret["jenkins_username"]
+        self.jenkins_password = secret["jenkins_password"]
 
     def _secure_webhook(self, event):
         """
@@ -105,32 +111,28 @@ class CIBot:
         logging.info(f'invoking {name}')
         try:
             job.invoke(block=False)
-        except:
-            raise Exception("unable to invoke job")
+        except Exception as e:
+            raise Exception("Unable to invoke job due to %s", exc_info=e)
 
     def _get_jenkins_obj(self):
-        logging.info(self.jenkins_url)
-        logging.info(self.jenkins_username)
-        logging.info(self.jenkins_password)
         return Jenkins(self.jenkins_url, username=self.jenkins_username, password = self.jenkins_password)
 
     def _trigger_ci(self, jobs, issue_num):
         """
         This method is responsible for triggering the CI
-        :param payload: The payload required for passing to Jenkins CI
         :param jobs: The jobs to trigger CI
         :param issue_num: Number of the PR
         :response Response indicating success or failure of invoking Jenkins CI
         """
 
-        # get jenkins credentials
+        # get jenkins object
         jenkins_obj = self._get_jenkins_obj()
         # invoke CI via jenkins api
         try:
             for job in jobs:
-                self._trigger_job(jenkins_obj,"mxnet-validation/"+job+"/PR-"+str(issue_num))
-        except:
-            logging.error("Unexpected error")#, sys.exc_info()[0])
+                self._trigger_job(jenkins_obj, "mxnet-validation/"+job+"/PR-"+str(issue_num))
+        except Exception as e:
+            logging.error("Unexpected error - %s", exc_info=e)
             raise Exception("Jenkins unable to trigger")
         return True
 
@@ -140,7 +142,7 @@ class CIBot:
 
     def _is_mxnet_committer(self, comment_author):
         """
-        This method returns the list of MXNet committers
+        This method checks if the comment author is a member of MXNet committers
         It uses the Github API for fetching team members of a repo
         """
         github_obj = self._get_github_object()

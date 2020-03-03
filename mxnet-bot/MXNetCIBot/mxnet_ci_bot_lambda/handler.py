@@ -48,11 +48,10 @@ def send_to_sqs(event, context):
 
 
 def run_jenkins_lambda(event, context):
-    # print("run jenins")
     cibot = CIBot(apply_secret=True)
 
     try:
         cibot.parse_webhook_data(event)
     except Exception as e:
         logging.error("CI bot raised an exception! %s", exc_info=e)
-    logging.info("Lambda is triggered successfully")
+    logging.info("Jenkins Lambda is triggered successfully")

@@ -1,13 +1,9 @@
 test:
     SECRET_NAME: github_ci_bot_test_credentials    
+    JENKINS_URL: http://jenkins.mxnet-ci-dev.amazon-ml.com/
     SECRET_ENDPOINT_URL: https://secretsmanager.us-west-2.amazonaws.com
     SECRET_ENDPOINT_REGION: us-west-2
-    # EC2_ACCOUNT_ARN: arn:aws:ec2:us-west-2:139068448383:*
-    # IAM_JENKINS_SLAVE_ROLE: arn:aws:iam::139068448383:role/jenkins_slave_role
-    # IAM_JENKINS_RESTRICTED_SLAVE_ROLE: arn:aws:iam::139068448383:role/jenkins_restricted_slave_role
     SECRET_ARN: arn:aws:secretsmanager:us-west-2:139068448383:secret:github_ci_bot_test_credentials-ikIwOD 
-    # SECRETS_MANAGER_ARN: arn:aws:secretsmanager:us-west-2:139068448383:secret:test/AutoScaling/Jenkins_Credentials-f72Ano
-    # JENKINS_PRIV_TUNNEL: jenkins-priv.mxnet-ci-dev.amazon-ml.com:48593    
     LOGGING_LEVEL: DEBUG
     LOGGING_LEVEL_BOTOCORE: INFO
     LOGGING_LEVEL_BOTO3: INFO
@@ -17,13 +13,10 @@ test:
 
 prod:
     # SECRET_NAME: prod/AutoScaling/Jenkins_Credentials
+    JENKINS_URL: http://jenkins.mxnet-ci.amazon-ml.com/
     SECRET_ENDPOINT_URL: https://secretsmanager.us-west-2.amazonaws.com
+    # SECRET_ARN: arn:aws:secretsmanager:us-west-2:139068448383:secret:github_ci_bot_test_credentials-ikIwOD 
     SECRET_ENDPOINT_REGION: us-west-2
-    # EC2_ACCOUNT_ARN: arn:aws:ec2:us-west-2:021742426385:*
-    # IAM_JENKINS_SLAVE_ROLE: arn:aws:iam::021742426385:role/jenkins_slave_role
-    # IAM_JENKINS_RESTRICTED_SLAVE_ROLE: arn:aws:iam::021742426385:role/jenkins_restricted_slave_role
-    # SECRETS_MANAGER_ARN: arn:aws:secretsmanager:us-west-2:021742426385:secret:prod/AutoScaling/Jenkins_Credentials-c0MJKQ
-    # JENKINS_PRIV_TUNNEL: jenkins-priv.mxnet-ci.amazon-ml.com:48593
     LOGGING_LEVEL: DEBUG
     LOGGING_LEVEL_BOTOCORE: INFO
     LOGGING_LEVEL_BOTO3: INFO
