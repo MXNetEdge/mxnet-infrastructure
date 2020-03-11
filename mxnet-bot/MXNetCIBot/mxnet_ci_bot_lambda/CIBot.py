@@ -203,24 +203,8 @@ class CIBot:
 
         try:
             payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
-            payload_raw = ast.literal_eval(event["Records"][0]['body'])['body']
         except ValueError:
             raise Exception("Decoding JSON for payload failed")
-
-        # if github_event == 'pull_request':
-        #     # new pull request created
-        #     logging.info('new PR created')
-        #     old_url="http://jenkins.mxnet-ci-dev.amazon-ml.com/github-webhook/multibranch-webhook-trigger/invoke"
-        #     url="http://jenkins.mxnet-ci-dev.amazon-ml.com/multibranch-webhook-trigger/invoke"
-        #     # data=payload
-        #     # event_headers = ast.literal_eval(event["Records"][0]['body'])['headers']
-        #     # secret = "3005fc41eb3043973a19e98b467a8f0ef6ad2ef4"
-        #     # secret_sign = hmac.new(key=secret.encode('utf-8'), msg=data, digestmod=hashlib.sha1).hexdigest()
-        #     # headers = {"Content-type":"application/json","X-Hub-Signature":secret_sign,"X-GitHub-Event":event_headers['X-GitHub-Event']}
-        #     headers = {"token":"0s(@RHO7EL$CKCE*ONE"}
-        #     r=requests.post(url, headers=headers)
-        #     logging.info(r.text)
-        #     return
 
         if github_event in ["check_suite", "check_run", "status"]:
             # if payload["check_suite"]["app"]["slug"] == "github-actions":
