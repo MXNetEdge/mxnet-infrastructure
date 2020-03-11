@@ -47,7 +47,9 @@ def send_to_sqs(event, context):
     }
 
 
-def run_jenkins_lambda(event, context):
+def run_jenkins_lambda(event, context):    
+    logging.info(f'event {event}')
+
     cibot = CIBot(apply_secret=True)
 
     try:

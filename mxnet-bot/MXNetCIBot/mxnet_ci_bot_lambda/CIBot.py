@@ -23,6 +23,7 @@ import secret_manager
 import hmac
 import hashlib
 import requests
+import jenkinsapi
 
 from jenkinsapi.jenkins import Jenkins
 from github import Github
@@ -33,8 +34,8 @@ class CIBot:
                  repo=os.environ.get("repo"),
                  github_user=None,
                  github_personal_access_token=None,
-                #  bot_user=None,
-                #  bot_oauth_token=None,
+                 bot_user=None,
+                 bot_personal_access_token=None,
                  jenkins_url=os.environ.get("jenkins_url"),
                  jenkins_username=None,
                  jenkins_password=None,
@@ -49,15 +50,14 @@ class CIBot:
         self.repo = repo
         self.github_user = github_user
         self.github_personal_access_token = github_personal_access_token
-        # self.bot_user = bot_user
-        # self.bot_oauth_token = bot_oauth_token
+        self.bot_user = bot_user
+        self.bot_personal_access_token = bot_personal_access_token
         self.jenkins_username = jenkins_username
         self.jenkins_password = jenkins_password
         if apply_secret:
             self._get_secret()
         self.auth = (self.github_user, self.github_personal_access_token)
-        # self.bot_auth = (self.bot_user, self.bot_oauth_token)
-        self.bot_auth = (self.github_user, self.github_personal_access_token)
+        self.bot_auth = (self.bot_user, self.bot_personal_access_token)
         self.all_jobs = None
         self.jenkins_url = jenkins_url
 
@@ -69,10 +69,8 @@ class CIBot:
         self.github_user = secret["github_user"]
         self.github_personal_access_token = secret["github_personal_access_token"]
         self.webhook_secret = secret["webhook_secret"]
-        # self.bot_user = secret["bot_user"]
-        # self.bot_oauth_token = secret["bot_oauth_token"]
-        self.jenkins_username = secret["jenkins_username"]
-        self.jenkins_password = secret["jenkins_password"]
+        self.bot_user = secret["bot_user"]
+        self.bot_personal_access_token = secret["bot_personal_access_token"]
 
     def _secure_webhook(self, event):
         """
@@ -103,14 +101,30 @@ class CIBot:
         """
         # for now hardcoding list of jobs
         # ideally use Jenkins API to query list of jobs and parse it (bit complicated)
-        all_jobs = ['clang', 'edge', 'centos-cpu', 'centos-gpu']
+        all_jobs = ['clang', 'edge', 'centos-cpu', 'centos-gpu', 'windows-cpu', 'windows-gpu', 'miscellaneous', 'unix-cpu', 'unix-gpu', 'website', 'sanity']
         self.all_jobs = set(all_jobs)
 
-    def _trigger_job(self, jenkins_obj, name):
-        job = jenkins_obj[name]
-        logging.info(f'invoking {name}')
+    def _get_job_trigger_token(self, name):
+        secret = json.loads(secret_manager.get_secret())
+        return secret[name.replace('-','_')+'_token']
+
+    def _trigger_job(self, jenkins_obj, job, issue_num):
         try:
-            job.invoke(block=False)
+            name = "mxnet-validation/"+job+"/PR-"+str(issue_num)
+            job = jenkins_obj[name]
+            logging.info(f'invoking {name}')
+            response = job.invoke(block=False)
+            logging.info(response)
+            return True
+        except jenkinsapi.custom_exceptions.UnknownJob:
+            # branch isn't discovered yet
+            # trigger a scan of multi-branch pipeline
+            url = self.jenkins_url+"multibranch-webhook-trigger/invoke"
+            job_trigger_token = self._get_job_trigger_token(job)
+            headers = {"token":job_trigger_token}
+            r=requests.post(url, headers=headers)
+            logging.info(r.text)
+            return True
         except Exception as e:
             raise Exception("Unable to invoke job due to %s", exc_info=e)
 
@@ -128,16 +142,22 @@ class CIBot:
         # get jenkins object
         jenkins_obj = self._get_jenkins_obj()
         # invoke CI via jenkins api
+        logging.info(jobs)
+
+        # list of successful jobs
+        success_jobs = []
         try:
             for job in jobs:
-                self._trigger_job(jenkins_obj, "mxnet-validation/"+job+"/PR-"+str(issue_num))
+                logging.info(job)
+                if self._trigger_job(jenkins_obj, job, issue_num):
+                    success_jobs.append(job)
         except Exception as e:
             logging.error("Unexpected error - %s", exc_info=e)
             raise Exception("Jenkins unable to trigger")
-        return True
+        return success_jobs
 
     def _get_github_object(self):
-        github_obj = Github(self.github_personal_access_token)        
+        github_obj = Github(self.github_personal_access_token)
         return github_obj
 
     def _is_mxnet_committer(self, comment_author):
@@ -159,8 +179,10 @@ class CIBot:
             return True
         return False
 
-    def _parse_jobs_from_comment(self, phrase):
-        jobs=phrase.split(" ")[2:][0][1:-1].split(',')
+    def _parse_jobs_from_comment(self, string):
+        substring = string[string.find('[') + 1: string.rfind(']')]
+        jobs = [' '.join(label.split()).lower() for label in substring.split(',')]
+        logging.info(f'parse jobs {jobs}')
         return jobs
 
     def parse_webhook_data(self, event):
@@ -179,47 +201,75 @@ class CIBot:
         if not self._secure_webhook(event):
             raise Exception("Failed to validate WebHook security")
 
-        try:                        
+        try:
             payload = json.loads(ast.literal_eval(event["Records"][0]['body'])['body'])
+            payload_raw = ast.literal_eval(event["Records"][0]['body'])['body']
         except ValueError:
             raise Exception("Decoding JSON for payload failed")
-        logging.info(f"payload loaded {payload}")
-        # some times lambda is triggered (dont know coz of why)
-        # it doesn't have payload[action]
-        if(payload["action"] == 'deleted'):
-            logging.info('comment deleted. Ignore')
+
+        # if github_event == 'pull_request':
+        #     # new pull request created
+        #     logging.info('new PR created')
+        #     old_url="http://jenkins.mxnet-ci-dev.amazon-ml.com/github-webhook/multibranch-webhook-trigger/invoke"
+        #     url="http://jenkins.mxnet-ci-dev.amazon-ml.com/multibranch-webhook-trigger/invoke"
+        #     # data=payload
+        #     # event_headers = ast.literal_eval(event["Records"][0]['body'])['headers']
+        #     # secret = "3005fc41eb3043973a19e98b467a8f0ef6ad2ef4"
+        #     # secret_sign = hmac.new(key=secret.encode('utf-8'), msg=data, digestmod=hashlib.sha1).hexdigest()
+        #     # headers = {"Content-type":"application/json","X-Hub-Signature":secret_sign,"X-GitHub-Event":event_headers['X-GitHub-Event']}
+        #     headers = {"token":"0s(@RHO7EL$CKCE*ONE"}
+        #     r=requests.post(url, headers=headers)
+        #     logging.info(r.text)
+        #     return
+
+        if github_event in ["check_suite", "check_run", "status"]:
+            # if payload["check_suite"]["app"]["slug"] == "github-actions":
+            logging.info('Irrelevant event. Ignore.')
             return
-        
+        if "action" in payload:
+            if(payload["action"] == 'deleted'):
+                logging.info('comment deleted. Ignore.')
+                return
+        # fetch comment author
+        comment_author = payload["comment"]["user"]["login"]
+
+        # if comment author is label bot itself, ignore
+        if comment_author == self.bot_user:
+            logging.info('Ignore comments made by bot')
+            return
+
+        logging.info(f"payload loaded {payload}")
+
         # Grab actual payload data of the appropriate GitHub event needed for
         # triggering CI
         if github_event == "issue_comment":            
-            # Look for phrase referencing @mxnet-ci-bot
-            if "@MXNet-CI-Bot" in payload["comment"]["body"]:
-                phrase = payload["comment"]["body"]#[payload["comment"]["body"].find("@MXNet-CI-Bot"):payload["comment"]["body"].find("]")+1]
+            # Look for phrase referencing @<bot_user>
+            if "@"+str(self.bot_user) in payload["comment"]["body"].lower():
+                phrase = payload["comment"]["body"][payload["comment"]["body"].find("@"+str(self.bot_user)):payload["comment"]["body"].find("]")+1]
+                # remove @<bot_user from the phrase
+                phrase = phrase.replace('@'+self.bot_user,'')
                 logging.info(phrase)
                 # remove whitespace characters
                 phrase = ' '.join(phrase.split())
                 
-                # Case so that ( run[job1] ) and ( run [job1] ) are treated the same way
-                # if phrase.split(" ")[1].find('[') != -1:
-                #     action = phrase.split(" ")[1][:phrase.split(" ")[1].find('[')].lower()
-                # else:
-                
-                action = phrase.split(" ")[1].lower()
+                # Handles both cases : ( run ci[job1] ) and ( run ci [job1] ) are treated the same way
+                action = phrase[0:phrase.find('[')].strip()
+
                 logging.info(f'action {action}')
                 issue_num = payload["issue"]["number"]
-                if action not in ['run', 'trigger']:
+                # only looking for the word run in PR Comment
+                if action not in ['run ci']:
                     message = "Undefined action detected. \n" \
-                              "Permissible actions are : run, trigger \n" \
-                              "Example : @mxnet-ci-bot run [centos-cpu] \n" \
-                              "Example : @mxnet-ci-bot trigger [centos-gpu]"
+                              "Permissible actions are : run ci [all], run ci [job1, job2] \n" \
+                              "Example : @" + self.bot_user + " run ci [all] \n" \
+                              "Example : @" + self.bot_user + " run ci [centos-cpu, clang]"
                     self.create_comment(issue_num, message)
                     logging.error(f'Undefined action by user: {action}')
                     raise Exception("Undefined action by user")
 
                 # parse jobs from the comment
-                jobs = self._parse_jobs_from_comment(phrase)
-                if not jobs:
+                user_jobs = self._parse_jobs_from_comment(phrase)
+                if not user_jobs:
                     logging.error(f'Message typed by user: {phrase}')
                     raise Exception("No jobs found from PR comment")
 
@@ -229,26 +279,30 @@ class CIBot:
                     raise Exception("Unable to gather jobs from the CI")
 
                 # check if any of the jobs requested by user are supported by CI
-                if not set(jobs).intersection(set(self.all_jobs)):
-                    logging.error(f'Jobs entered by user: {set(jobs)}')
+                # intersection of user request jobs and CI supported jobs
+                if user_jobs == ['all']:
+                    valid_jobs = self.all_jobs
+                else:
+                    valid_jobs = list(set(user_jobs).intersection(set(self.all_jobs)))
+                if not valid_jobs:
+                    logging.error(f'Jobs entered by user: {set(user_jobs)}')
                     logging.error(f'CI supported Jobs: {set(self.all_jobs)}')
-                    message = "None of the jobs entered are supported. \n"
-                            #   "Jobs entered by user:" + {set(jobs)}  \n" \
-                            #   "Example : @mxnet-ci-bot run [centos-cpu] \n" \
-                            #   "Example : @mxnet-ci-bot trigger [centos-gpu]"
+                    message = "None of the jobs entered are supported. \n" \
+                              "Jobs entered by user: "+str(set(user_jobs))+"\n" \
+                              "CI supported Jobs: "+str(set(self.all_jobs))+"\n"
                     self.create_comment(issue_num, message)
                     raise Exception("Provided jobs don't match the ones supported by CI")
 
                 
                 # check if the comment author is authorized
-                comment_author = payload["comment"]["user"]["login"]
                 pr_author = payload["issue"]["user"]["login"]
 
                 if self._is_authorized(comment_author, pr_author):
                     logging.info(f'Authorized user: {comment_author}')
-                    # since authorized user commented, go ahead trigger CI                    
-                    if self._trigger_ci(jobs, issue_num):                        
-                        message = "Jenkins CI successfully triggered."
+                    # since authorized user commented, go ahead trigger CI
+                    successful_jobs = self._trigger_ci(valid_jobs, issue_num)
+                    if successful_jobs:
+                        message = "Jenkins CI successfully triggered : "+str(successful_jobs)
                     else:
                         message = "Authorized user recognized. However, the bot is unable to trigger CI."
                     self.create_comment(issue_num, message)
@@ -259,6 +313,9 @@ class CIBot:
                               "Only following 3 categories can trigger CI : \n" \
                               "PR Author, MXNet Committer, Jenkins Admin."
                     self.create_comment(issue_num, message)
+            else:
+                logging.error("CI Bot is not called")
+                return
         else:
             logging.info(f'GitHub Event unsupported by CI Bot: {github_event}')#{payload["action"]}
 
