@@ -50,7 +50,7 @@ def send_to_sqs(event, context):
 def run_jenkins_lambda(event, context):    
     logging.info(f'event {event}')
 
-    cibot = CIBot(apply_secret=True)
+    cibot = CIBot(apply_secret=True, auto_trigger=True)
 
     try:
         cibot.parse_webhook_data(event)

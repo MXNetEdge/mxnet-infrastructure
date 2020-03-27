@@ -5,6 +5,7 @@ frameworkVersion: ">=1.2.0 <2.0.0"
 provider:
   name: aws
   runtime: python3.7
+  timeout: 120
   region: us-west-2
   stage: ${opt:stage}
   environment: ${file(environment.yml):${self:provider.stage}}
@@ -39,6 +40,7 @@ functions:
 
   jenkins:
     handler: handler.run_jenkins_lambda
+    timeout: 120
     events:
       - sqs:
           arn:
@@ -64,7 +66,7 @@ plugins:
 custom:
   queueName: ci_sqs
   customDomain:
-    domainName: "mxnetcibot-webhook.mxnet-ci-dev.amazon-ml.com"
+    domainName: ${self:provider.environment.DOMAIN_NAME}
     basePath: ${opt:stage}
     stage: ${opt:stage} 
     createRoute53Record: true
