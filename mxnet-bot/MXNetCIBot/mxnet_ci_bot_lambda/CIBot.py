@@ -247,8 +247,12 @@ class CIBot:
             if(payload['action']=='opened'):
                 logging.info('New PR create event detected. Send help guide.')                
                 pr_author = payload['pull_request']['user']['login']
+                if(self.auto_trigger):
+                    intro_mesg = "All tests are already queued to run once. If tests fail, you can trigger one or more tests again with the following commands:"
+                else:
+                    intro_mesg = "Once your PR is ready for CI checks, invoke the following commands:"
                 message = "Hey @"+pr_author+" , Thanks for submitting the PR \n" \
-                        "Once your PR is ready for CI checks, invoke the following commands: \n" \
+                        + intro_mesg + " \n" \
                         "- To trigger all jobs: @" + self.bot_user + " run ci [all] \n" \
                         "- To trigger specific jobs: @" + self.bot_user + " run ci [job1, job2] \n" \
                         "*** \n" \
