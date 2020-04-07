@@ -74,7 +74,7 @@ class CIBot:
     def _get_secret(self):
         """
         This method is to get secret value from Secrets Manager
-        """        
+        """
         secret = json.loads(secret_manager.get_secret())
         self.github_user = secret["github_user"]
         self.github_personal_access_token = secret["github_personal_access_token"]
@@ -118,7 +118,7 @@ class CIBot:
 
     def _get_job_trigger_token(self, name):
         secret = json.loads(secret_manager.get_secret())
-        return secret[name.replace('-','_')+'_token']
+        return secret[name.replace('-', '_')+'_token']
 
     def _pending_build_cleanup(self, job_instance, name):
         running = job_instance.is_queued_or_running()
@@ -134,6 +134,12 @@ class CIBot:
         return
 
     def _trigger_job(self, jenkins_obj, job, branch):
+        """
+        This method triggers a particular jenkins job
+        :param jenkins_obj Jenkins Object
+        :param job name of the job to be triggered
+        :param branch e.g. master/PR
+        """
         try:
             name = "mxnet-validation/"+job+"/"+branch
             job = jenkins_obj[name]
@@ -160,6 +166,9 @@ class CIBot:
             raise Exception("Unable to invoke job due to %s", exc_info=e)
 
     def _get_jenkins_obj(self):
+        """
+        This method returns an object of Jenkins instantiated using username, password
+        """
         return Jenkins(self.jenkins_url, username=self.jenkins_username, password=self.jenkins_password)
 
     def _trigger_ci(self, jobs, branch):
@@ -188,6 +197,9 @@ class CIBot:
         return success_jobs
 
     def _get_github_object(self):
+        """
+        This method returns github object initialized with Github personal access token
+        """
         github_obj = Github(self.github_personal_access_token)
         return github_obj
 
@@ -195,11 +207,19 @@ class CIBot:
         """
         This method checks if the comment author is a member of MXNet committers
         It uses the Github API for fetching team members of a repo
+        Only a Committer can access [read/write] to Apache MXNet Committer team on Github
+        Retrieved the Team ID of the Apache MXNet Committer team on Github using a Committer's credentials
         """
         github_obj = self._get_github_object()
         return github_obj.get_organization('apache').get_team(2413476).has_in_members(github_obj.get_user(comment_author))        
 
     def _is_authorized(self, comment_author, pr_author):
+        """
+        This method checks if the comment author is authorized or not
+        :param comment_author user ID of the user who commented on the PR
+        :param pr_author user ID of the Author of the PR
+        :response True/False indicates if comment_author is authorized or not
+        """
         # verify if the comment author is authorized to trigger CI
         # authorized users:
         # 1. PR Author
@@ -211,6 +231,10 @@ class CIBot:
         return False
 
     def _parse_jobs_from_comment(self, string):
+        """
+        This method parses jobs from the user comment on the PR
+        """
+        # extract substring between the square brackets []
         substring = string[string.find('[') + 1: string.rfind(']')]
         jobs = [' '.join(label.split()).lower() for label in substring.split(',')]
         logging.info(f'parse jobs {jobs}')
@@ -326,7 +350,7 @@ class CIBot:
                 action = phrase[0:phrase.find('[')].strip()
 
                 logging.info(f'action {action}')
-                
+
                 # only looking for the word run in PR Comment
                 if action not in ['run ci']:
                     message = "Undefined action detected. \n" \
@@ -359,7 +383,7 @@ class CIBot:
                     self.create_comment(issue_num, message)
                     raise Exception("Provided jobs don't match the ones supported by CI")
 
-                
+
                 # check if the comment author is authorized
                 pr_author = payload["issue"]["user"]["login"]
 
